@@ -16,10 +16,14 @@ function session_boot(): void
 
     $secure = str_starts_with((string) config('APP_URL'), 'https://');
 
+    // Session aktif 1 jam (3600 detik) — baik cookie maupun server-side GC
+    $lifetime = 3600;
+
     ini_set('session.use_strict_mode', '1');
+    ini_set('session.gc_maxlifetime', (string) $lifetime);
     session_name('INDEEPSESSID');
     session_set_cookie_params([
-        'lifetime' => 0,
+        'lifetime' => $lifetime,
         'path'     => '/',
         'domain'   => '',
         'secure'   => $secure,
