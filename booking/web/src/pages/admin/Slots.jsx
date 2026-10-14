@@ -1,0 +1,343 @@
+import { useCallback, useEffect, useState } from 'react'
+import { api, ApiError } from '../../lib/api.js'
+import { formatDate, formatSlotTime } from '../../lib/format.js'
+import { useAuth } from '../../lib/auth.jsx'
+
+/**
+ * Kalender slot admin (PRD Bab 16.3): grid 30 hari per jam.
+ * Hijau = tersedia, merah = penuh, abu = libur/terkunci.
+ * Aksi tulis (D1): kunci/buka + ubah kapasitas via panel.
+ * Superadmin (T7-B2): tambah slot manual + hapus slot kosong.
+ */
+
+function hariIndo(iso) {
+  const names = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+  const [y, m, d] = iso.split('-').map(Number)
+  return names[new Date(y, m - 1, d).getDay()]
+}
+
+function cellClass(s) {
+  if (s.is_locked) return 'bg-gray-300'
+  if (s.booked >= s.capacity) return 'bg-red-300'
+  return 'bg-green-200'
+}
+
+function cellLabel(s) {
+  if (s.is_locked) return 'Terkunci'
+  if (s.booked >= s.capacity) return 'Penuh'
+  return 'Tersedia'
+}
+
+export default function AdminSlots() {
+  const { user } = useAuth()
+  const isSuper = user?.role === 'superadmin'
+
+  const [slots, setSlots] = useState([])
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const [pilih, setPilih] = useState(null) // slot terpilih untuk aksi
+  const [kapasitas, setKapasitas] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  // form tambah slot manual (superadmin)
+  const [tambah, setTambah] = useState(null) // { slot_date, slot_time, capacity }
+  const [hapus, setHapus] = useState(null) // slot yang mau dihapus
+
+  const muat = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api('/admin/slots.php')
+      setSlots(res.data.data)
+      setFrom(res.data.from)
+      setTo(res.data.to)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal memuat slot.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    document.title = 'Kalender Slot Admin | App InDeep Booking'
+    muat()
+  }, [muat])
+
+  // Kelompokkan per tanggal
+  const perTanggal = {}
+  for (const s of slots) {
+    if (!perTanggal[s.slot_date]) perTanggal[s.slot_date] = {}
+    perTanggal[s.slot_date][s.slot_time] = s
+  }
+  const tanggalList = Object.keys(perTanggal).sort()
+
+  function bukaAksi(s) {
+    setPilih(s)
+    setKapasitas(String(s.capacity))
+    setError('')
+  }
+
+  async function simpanAksi(body) {
+    setBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      await api('/admin/slots.php', { method: 'PATCH', body: JSON.stringify(body) })
+      setSuccess('Slot diperbarui.')
+      setPilih(null)
+      await muat()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal memperbarui slot.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function simpanTambah() {
+    if (!tambah?.slot_date || !tambah?.slot_time) {
+      setError('Pilih tanggal dan jam dulu ya.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      await api('/admin/slots.php', { method: 'POST', body: JSON.stringify(tambah) })
+      setSuccess(`Slot ${tambah.slot_date} ${tambah.slot_time} ditambahkan.`)
+      setTambah(null)
+      await muat()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal menambah slot.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function konfirmasiHapus() {
+    if (!hapus) return
+    setBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      await api(`/admin/slots.php?id=${hapus.id}`, { method: 'DELETE' })
+      setSuccess(`Slot ${hapus.slot_date} ${hapus.slot_time} dihapus.`)
+      setHapus(null)
+      setPilih(null)
+      await muat()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal menghapus slot.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-extrabold">Kalender Slot</h2>
+        <div className="flex items-center gap-3">
+          {isSuper ? (
+            <button
+              type="button"
+              onClick={() => setTambah({ slot_date: '', slot_time: '09.00', capacity: 1 })}
+              className="btn btn-cta text-sm"
+            >
+              + Tambah Slot
+            </button>
+          ) : null}
+          <p className="text-sm text-gray-600">
+            {from && to ? `${formatDate(from)} – ${formatDate(to)}` : 'Memuat…'}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-3 text-sm font-bold">
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-green-200" /> Tersedia</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-red-300" /> Penuh</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-gray-300" /> Terkunci</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-white" /> Selasa (libur)</span>
+      </div>
+
+      {error ? (
+        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+      ) : null}
+      {success ? (
+        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{success}</p>
+      ) : null}
+
+      {loading ? (
+        <p className="text-gray-600">Memuat…</p>
+      ) : (
+        <div className="card overflow-x-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="border-b-2 border-black bg-paper">
+              <tr>
+                <th className="p-3 text-left font-extrabold">Tanggal</th>
+                <th className="p-3 text-left font-extrabold">Pagi 09.00</th>
+                <th className="p-3 text-left font-extrabold">Siang 13.00</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tanggalList.map((tgl) => {
+                const isSelasa = hariIndo(tgl) === 'Selasa'
+                return (
+                  <tr key={tgl} className="border-b border-gray-200 last:border-0">
+                    <td className="p-3">
+                      <p className="font-bold">{formatDate(tgl)}</p>
+                      <p className="text-xs text-gray-500">{hariIndo(tgl)}</p>
+                    </td>
+                    {['09.00', '13.00'].map((jam) => {
+                      if (isSelasa) {
+                        return (
+                          <td key={jam} className="p-3">
+                            <span className="inline-block rounded-lg border-2 border-black bg-white px-3 py-1 text-xs font-bold text-gray-400">
+                              Libur (Selasa)
+                            </span>
+                          </td>
+                        )
+                      }
+                      const s = perTanggal[tgl]?.[jam]
+                      if (!s) {
+                        return <td key={jam} className="p-3 text-gray-400">—</td>
+                      }
+                      return (
+                        <td key={jam} className="p-3">
+                          <button
+                            type="button"
+                            onClick={() => bukaAksi(s)}
+                            className={`rounded-lg border-2 border-black px-3 py-1 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
+                          >
+                            <p>{cellLabel(s)}</p>
+                            <p className="font-normal">{s.booked}/{s.capacity} terisi</p>
+                          </button>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Panel aksi slot */}
+      {pilih ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="card w-full max-w-md p-5">
+            <h3 className="text-lg font-extrabold">
+              {formatDate(pilih.slot_date)} — {formatSlotTime(pilih.slot_time)}
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Terisi {pilih.booked}/{pilih.capacity} · {cellLabel(pilih)}
+            </p>
+
+            <label className="mt-4 block text-sm font-bold">
+              Kapasitas
+              <input
+                type="number"
+                min={Math.max(1, pilih.booked)}
+                value={kapasitas}
+                onChange={(e) => setKapasitas(e.target.value)}
+                className="input-brutal mt-1"
+              />
+            </label>
+            {Number(kapasitas) < pilih.booked ? (
+              <p className="mt-1 text-xs font-bold text-red-600">
+                Tidak boleh kurang dari {pilih.booked} yang sudah terisi.
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy || Number(kapasitas) < pilih.booked || Number(kapasitas) === pilih.capacity}
+                onClick={() => simpanAksi({ id: pilih.id, capacity: Number(kapasitas), is_locked: pilih.is_locked })}
+                className="btn btn-cta"
+              >
+                {busy ? 'Menyimpan…' : 'Simpan Kapasitas'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => simpanAksi({ id: pilih.id, is_locked: !pilih.is_locked })}
+                className="btn btn-press"
+              >
+                {pilih.is_locked ? 'Buka Kunci' : 'Kunci Slot'}
+              </button>
+              {isSuper && pilih.booked === 0 ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setHapus(pilih)}
+                  className="btn border-red-700 bg-red-50 text-red-800 hover:bg-red-100"
+                >
+                  Hapus Slot
+                </button>
+              ) : null}
+              <button type="button" onClick={() => setPilih(null)} className="btn btn-ghost">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Dialog tambah slot manual (superadmin) */}
+      {tambah ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="card w-full max-w-md p-5">
+            <h3 className="text-lg font-extrabold">Tambah Slot Manual</h3>
+            <p className="mt-1 text-sm text-gray-600">Selasa libur mutlak. Jam hanya 09.00 / 13.00.</p>
+            <label className="mt-4 block text-sm font-bold">
+              Tanggal
+              <input type="date" value={tambah.slot_date} onChange={(e) => setTambah({ ...tambah, slot_date: e.target.value })} className="input-brutal mt-1" />
+            </label>
+            <label className="mt-3 block text-sm font-bold">
+              Jam
+              <select value={tambah.slot_time} onChange={(e) => setTambah({ ...tambah, slot_time: e.target.value })} className="input-brutal mt-1">
+                <option value="09.00">09.00</option>
+                <option value="13.00">13.00</option>
+              </select>
+            </label>
+            <label className="mt-3 block text-sm font-bold">
+              Kapasitas (1-50)
+              <input type="number" min={1} max={50} value={tambah.capacity} onChange={(e) => setTambah({ ...tambah, capacity: Number(e.target.value) })} className="input-brutal mt-1" />
+            </label>
+            <div className="mt-5 flex gap-2">
+              <button type="button" disabled={busy} onClick={simpanTambah} className="btn btn-cta">
+                {busy ? 'Menyimpan…' : 'Tambah Slot'}
+              </button>
+              <button type="button" onClick={() => setTambah(null)} className="btn btn-ghost">Batal</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Dialog hapus slot (superadmin) */}
+      {hapus ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="card w-full max-w-md p-5">
+            <h3 className="text-lg font-extrabold text-red-700">Hapus Slot?</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              {formatDate(hapus.slot_date)} {formatSlotTime(hapus.slot_time)} · {hapus.booked}/{hapus.capacity} terisi.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Hanya slot kosong yang bisa dihapus. Kalau hari itu masih dibutuhkan, buat lagi lewat Tambah Slot.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button type="button" disabled={busy} onClick={konfirmasiHapus} className="btn border-red-700 bg-red-600 text-white hover:bg-red-700">
+                {busy ? 'Menghapus…' : 'Ya, Hapus'}
+              </button>
+              <button type="button" onClick={() => setHapus(null)} className="btn btn-ghost">Batal</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}

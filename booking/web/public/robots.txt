@@ -1,0 +1,13 @@
+# robots.txt — App InDeep Booking (InDeepCleaningID)
+# Catatan: crawler cuma baca robots.txt dari root domain
+# (indeepcleaningid.site/robots.txt) — file ini pelengkap di sub-path.
+User-agent: *
+Allow: /
+
+# Jangan indeks area login & API (path dari root domain)
+Disallow: /app-booking/login
+Disallow: /app-booking/lupa-password
+Disallow: /app-booking/admin
+Disallow: /app-booking/api/
+
+Sitemap: https://indeepcleaningid.site/app-booking/sitemap.xml

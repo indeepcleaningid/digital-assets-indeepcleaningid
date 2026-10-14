@@ -1,0 +1,146 @@
+# ENGINEER — Log Perubahan Sistem
+
+> Riwayat perubahan teknis App InDeep Booking. **Setiap PR wajib menambah
+> entry baru di sini** (aturan di [CONTRIBUTING.md](CONTRIBUTING.md)).
+>
+> Format: tanggal (YYYY-MM-DD) → judul → commit/PR → **apa** yang berubah →
+> **kenapa** → file kena.
+
+---
+
+## 2026-10-13
+
+### Persiapan flip public: README top-matter, LICENSE, CONTRIBUTING — PR #21 (PR ini)
+
+- **Apa**: Tiga file presentasi disiapkan buat repo publik — README: badge CI
+  + ringkasan Inggris singkat + framing "proprietary, source available for
+  inspection" (baris "Status repo: private" dihapus, bagian Lisensi ikut);
+  LICENSE: klausa "Repository is PRIVATE" diganti model source-available
+  (Section 2 baru "Nature of this Release", pembatasan reuse diperkuat
+  termasuk larangan layanan bersaing); CONTRIBUTING: preamble untuk pembaca
+  publik (bug report welcome, security via SECURITY.md, kebijakan PR
+  eksternal).
+- **Kenapa**: Repo mau di-flip public buat porto & review tanpa minta akses —
+  dokumen lama masih menjamin privasi repo yang sudah tidak berlaku, dan
+  LICENSE lama justru melarang keras hal yang baru kita putuskan.
+- **File**: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `ENGINEER.md`.
+
+### Go-public hygiene: jejak password default dihapus + SECURITY.md — PR #20 (merged `17a0070`)
+
+- **Apa**: Persiapan repo sebelum di-flip public — 6 titik password default
+  hardcoded dihapus dari `README` (2), `config.example.php`, `seed.php`,
+  `dev.mjs`, dan `uji-admin-tahap4.mjs`. Seed kini **wajib** `SEED_ADMIN_*`
+  diisi sendiri (guard `exit(1)`, tanpa echo password); test admin baca
+  kredensial dari `config/config.php` lokal / env `UJI_ADMIN_*`. `SECURITY.md`
+  baru: disclosure policy + pernyataan "tidak ada credential/PII di repo".
+- **Kenapa**: Repo disiapkan jadi publik (porto + bisa direview tanpa minta
+  akses). Password default terdokumentasi = petunjuk username + pola password
+  buat attacker live site. Secret scan 14 commit history: **bersih** — string
+  mirip token hanyalah integrity hash `package-lock.json`.
+- **File**: `README.md`, `config/config.example.php`, `scripts/seed.php`,
+  `scripts/dev.mjs`, `scripts/uji-admin-tahap4.mjs`, `SECURITY.md`, `ENGINEER.md`.
+
+### Repo dikasih kerangka maintain: README, CONTRIBUTING, ENGINEER, LICENSE, CI — PR #1 (merged `54a8a6e`)
+
+- **Apa**: Lima file fondasi — README (dokumentasi lengkap app), CONTRIBUTING
+  (aturan wajib PR + review manual Bang Rob + wajib log), ENGINEER (log
+  perubahan, diisi dari git log), LICENSE (proprietary), dan GitHub Actions CI
+  pertama (`php -l` + build Vite + cek bundle `public/` sinkron sama source).
+- **Kenapa**: `main` auto-deploy ke live, jadi perubahan gak boleh masuk tanpa
+  review; repo juga disiapin jadi referensi tim dan template project porto.
+- **File**: `README.md`, `CONTRIBUTING.md`, `ENGINEER.md`, `LICENSE`,
+  `.github/workflows/ci.yml`.
+
+### README versi Indonesia — PR #2 (PR ini)
+
+- **Apa**: Seluruh isi `README.md` diterjemahkan ke bahasa Indonesia
+  (struktur, tabel, kode identik — cuma bahasa prosa). Anchor internal
+  `CONTRIBUTING.md` disesuaikan (`#testing` → `#pengujian`).
+- **Kenapa**: Permintaan Bang Rob — repo dan tim pakai bahasa Indonesia biar
+  gak ada salah paham. (Keputusan awal Inggris demi porto, ditukar belakangan.)
+- **File**: `README.md`, `CONTRIBUTING.md`, `ENGINEER.md`.
+
+### FE ganti email: validasi sebelum kirim — `c86b008`
+
+- **Apa**: Form "Ganti Email" di `/profil` menolak email kosong dan format
+  salah di frontend sebelum memanggil API (banner pesan + trim spasi pinggir).
+  Tombol tidak lagi memicu request `newEmail` kosong.
+- **Kenapa**: Gejala live — klik "Kirim dua kode OTP" tanpa isi email
+  (form `noValidate` tidak memblokir) membuat backend membalas
+  `400 invalid_email` "Email baru belum benar formatnya ya." sehingga fase
+  input OTP tidak pernah terbuka.
+- **File**: `web/src/pages/Profil.jsx`, bundle `public/assets/`.
+
+## 2026-10-12
+
+### OTP produksi: klien SMTP mentah Gmail — `392993c`
+
+- **Apa**: Klien SMTP nol-dependensi baru `app/lib/smtp.php` (dialog
+  EHLO → AUTH LOGIN → MAIL → RCPT → DATA, TLS implisit port 465) menggantikan
+  PHPMailer sesuai amendmen PRD Bab 10.4. Produksi dengan SMTP kosong kini
+  membalas `503 email_disabled` yang jujur (bukan sukses palsu ke file log).
+  Ditambah `scripts/cleanup-otp.php` buat cron 10 menit.
+- **Kenapa**: PRD asli mewajibkan PHPMailer, tapi keputusan Bang Rob:
+  zero-dep ala EXP011, satu provider Gmail, tiap baris bisa ditrace.
+- **File**: `app/lib/smtp.php` (baru), `app/lib/mailer.php`,
+  `scripts/cleanup-otp.php` (baru), `config/config.example.php`.
+- **Verifikasi**: uji protocol offline lawan fake SMTP TLS + suite OTP
+  21/21 lolos + live `otp-request` membalas 200.
+
+### PRD disinkronisasi ke realita (file internal, di luar git)
+
+- **Apa**: 15 titik PRD diperbarui: PHPMailer → SMTP mentah, port 8000 →
+  Docker 5011, upload manual → deploy auto push `main`, CSRF token per form →
+  Origin allowlist, build `web/dist/` → `public/`, risiko SMTP ditutup,
+  dedup risiko Node/PHP, footer Next ditujuin.
+- **Kenapa**: PRD sempat jadi "harapan", bukan "realita kode".
+- **File**: `Credential+plan/PRD-app-indeep.md` (tidak dicommit, sengaja).
+
+### Seed produksi: pintu dibuka sekali lalu ditutup permanen — `335dd43`, `8c3095c`, `a0230a6`
+
+- **Apa**: Seed jalan di Hostinger shared (tanpa SSH) lewat wrapper web
+  sekali-pakai `seed-web.php` → 10 tabel, 44 SKU, 3 surcharge, admin Argon2id
+  terisi. Pintu kemudian dihapus dan diblokir permanen di root `.htaccess`.
+- **Kenapa**: Hostinger gak punya akses CLI; seeding wajib sekali di server.
+- **File**: `scripts/seed.php`, `scripts/seed-web.php`, `.htaccess`.
+
+### Fix path produksi: origin check, base API, prefix brand — `ea2394d`
+
+- **Apa**: Semua request tulis tadinya kena `403` universal di produksi
+  karena origin check membandingkan full URL vs origin. Diperbaiki via
+  `origin_of()` (scheme://host[:port]). `api.js` kini turun dari
+  `import.meta.env.BASE_URL` (gak perlu `VITE_API_URL`), prefix
+  `/app-booking/` untuk link Google login dan URL foto profil, robots +
+  sitemap ke domain asli.
+- **Kenapa**: Deploy pertama bikin semua tulis (login, booking, OTP) gagal.
+- **File**: `app/lib/security.php`, `app/lib/response.php`, `web/src/api.js`,
+  4 file brand, `web/public/robots.txt`, `web/public/sitemap.xml`.
+
+### Deploy auto: Vite outDir ke public/ + root .htaccess routing — `33ef6cf`, `8982f27`
+
+- **Apa**: Build frontend jatuh langsung ke `public/` (bukan `web/dist/`),
+  root `.htaccess` memblok file repo internal lalu mengarahkan sisanya ke
+  `public/` dengan fallback SPA React Router untuk deploy sub-path.
+- **Kenapa**: Hostinger auto-deploy menyinkronkan repo ke `public_html`;
+  tanpa routing ini asset React 404 di hard-refresh route dalam.
+- **File**: `web/vite.config.js`, `.htaccess`, `public/index.html`,
+  `public/assets/*`.
+
+### Bersihkan file uji struk PDF — `565282a`
+
+- **Apa**: File hasil uji `web/struk-*.pdf` dihapus dan masuk `.gitignore`.
+- **Kenapa**: File uji bukan bagian produk.
+
+### Rilis v1 — `37d5fc0`
+
+- **Apa**: Aplikasi lengkap sesuai PRD locked: booking 5 langkah, pricelist
+  44 SKU, slot anti-tumpang-tindih (transaksi InnoDB + optimistic lock),
+  dashboard admin, profil + OTP, struk PDF, auth Google + admin, seed,
+  neobrutalism rounded. React 19 + Vite 8 + Tailwind 4 + PHP 8.3 zero-dep
+  + MariaDB 11 Docker.
+- **Kenapa**: Inisialisasi repo dari PRD (11 Okt 2026).
+
+---
+
+> Aturan: entry terbaru di atas. Jangan menghapus entry lama — riwayat ini
+> yang dipakai saat audit, debugging "kenapa keputusan ini", dan onboarding tim.
