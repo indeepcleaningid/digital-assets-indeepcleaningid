@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Invoice Generator - In Deep Cleaning ID (Internal)</title>
+    <meta name="description" content="Internal Invoice Generator In Deep Cleaning ID">
+    <link rel="icon" href="../../../favicon.svg" type="image/svg+xml">
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- jsPDF + html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#062C3D', accent: '#F4A100' },
+                    fontFamily: { heading: ['Poppins','sans-serif'], body: ['Inter','sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1,h2,h3 { font-family: 'Poppins', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            main { padding: 0 !important; }
+            #invoice-preview { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; }
+            @page { margin: 10mm; }
+        }
+        .preview-a4 { width: 210mm; min-height: 297mm; }
+        @media (max-width: 1024px) { 
+            .preview-a4 { width: 100%; min-height: auto; } 
+            #invoice-preview { font-size: 12px; }
+            #invoice-preview table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+            #invoice-preview table thead, #invoice-preview table tbody, #invoice-preview table tfoot { display: table; width: 100%; }
+        }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        /* Mobile sticky bar */
+        .mobile-sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; padding: 12px 16px; display: flex; gap: 8px; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); }
+        @media (min-width: 1024px) { .mobile-sticky-bar { display: none; } }
+        @media (max-width: 1024px) { body { padding-bottom: 88px; } }
+        /* Better tap targets for mobile */
+        @media (max-width: 640px) {
+            input, select, textarea, button { font-size: 16px !important; } /* prevent zoom on iOS */
+            #items-container .border { padding: 12px !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen antialiased">
+
+
+    <main class="w-full px-4 py-6 lg:max-w-[1400px] lg:mx-auto">
+        <div class="grid lg:grid-cols-12 gap-6 items-start">
+
+            <!-- LEFT: FORM -->
+            <div class="lg:col-span-5 space-y-6 no-print">
+                
+                <!-- Header Auto -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="font-heading font-bold text-primary mb-4 flex items-center gap-2"><span class="w-7 h-7 bg-primary text-white rounded-lg flex items-center justify-center text-sm">1</span> Info Invoice</h2>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Invoice (Auto)</label>
+                            <div class="flex gap-2">
+                                <input id="inv-number" type="text" readonly class="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono font-bold text-primary">
+                                <button id="btn-regen" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm" title="Regenerate">🔄</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Invoice</label>
+                                <input id="inv-date" type="date" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Jatuh Tempo (1x24 jam)</label>
+                                <input id="inv-due" type="date" readonly class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="font-heading font-bold text-primary mb-4 flex items-center gap-2"><span class="w-7 h-7 bg-primary text-white rounded-lg flex items-center justify-center text-sm">2</span> Data Pelanggan</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Pelanggan <span class="text-amber-600 font-normal">• ketik untuk autocomplete</span></label>
+                            <input id="cust-name" type="text" list="cust-list" placeholder="Ketik nama pelanggan lama atau baru..." class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary" autocomplete="off">
+                            <datalist id="cust-list"></datalist>
+                            <p id="cust-hint" class="text-xs text-emerald-600 mt-1 hidden">✓ Pelanggan lama ditemukan - alamat & WA auto terisi</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Alamat Lengkap</label>
+                            <textarea id="cust-address" rows="2" placeholder="Jl. Contoh No. 123, Jakarta..." class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor WhatsApp</label>
+                            <input id="cust-wa" type="tel" placeholder="081234567890" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        </div>
+                        <label class="flex items-center gap-2 text-xs font-medium text-slate-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 cursor-pointer">
+                            <input id="cust-save" type="checkbox" checked class="rounded text-primary focus:ring-primary">
+                            <span>✓ Simpan pelanggan baru ke file server (Hostinger)</span>
+                        </label>
+                        <p class="text-[11px] text-slate-500">Jika pelanggan baru dicentang, data akan auto kesimpen ke <code>customers.js</code> di server via <code>save.php</code>. Bisa di-download via File Manager kapan saja.</p>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-heading font-bold text-primary flex items-center gap-2"><span class="w-7 h-7 bg-primary text-white rounded-lg flex items-center justify-center text-sm">3</span> Item Layanan</h2>
+                        <button id="btn-add-item" class="text-xs bg-primary text-white px-4 py-2 rounded-full font-semibold hover:bg-primary/90 transition">+ Tambah Item</button>
+                    </div>
+                    <div id="items-container" class="space-y-4"></div>
+                    
+                    <!-- Summary -->
+                    <div class="mt-6 pt-4 border-t border-slate-200 space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-slate-600">Subtotal</span><span id="sum-subtotal" class="font-semibold">Rp 0</span></div>
+                        <div class="flex justify-between"><span class="text-slate-600">PPN (0%)</span><span class="font-semibold">Rp 0</span></div>
+                        <div class="flex justify-between text-base bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
+                            <span class="font-bold text-primary">Grand Total</span>
+                            <span id="sum-grand" class="font-heading font-bold text-primary text-lg">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="font-heading font-bold text-primary mb-3 text-sm">Syarat & Ketentuan</h2>
+                    <textarea id="inv-terms" rows="2" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary">Pembayaran Max 1x24 jam, Pasca Pencucian</textarea>
+                    <p class="text-xs text-slate-500 mt-2">Metode: Transfer BCA 5771491465 a/n Robby Aliasa Akbar (editable via ⚙️ Edit Company)</p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col gap-3">
+                    <button type="button" id="btn-preview" class="w-full bg-accent text-white py-3.5 rounded-xl font-bold hover:bg-accent/90 transition shadow">👁️ Update Preview</button>
+                    <button type="button" id="btn-pdf" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold hover:bg-primary/90 transition shadow-lg flex items-center justify-center gap-2">📄 Download PDF <span id="pdf-loading" class="hidden animate-spin">⏳</span></button>
+                    <button type="button" id="btn-print" class="w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 transition">🖨️ Print</button>
+                    <p class="text-center text-xs text-slate-500">File PDF: <span id="pdf-filename" class="font-mono">INV-...pdf</span></p>
+                </div>
+            </div>
+
+            <!-- RIGHT: PREVIEW -->
+            <div class="lg:col-span-7 lg:sticky lg:top-[80px]">
+                <div class="flex items-center justify-between mb-3 no-print">
+                    <h2 class="font-heading font-bold text-primary">Preview Invoice (A4)</h2>
+                    <span class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-semibold">Live Update • Premium Clean</span>
+                </div>
+                
+                <div id="invoice-preview" class="preview-a4 bg-white shadow-2xl border border-slate-200 mx-auto overflow-hidden">
+                    <!-- Preview Header -->
+                    <div class="h-1.5 bg-accent"></div>
+                    <div class="h-2 bg-primary"></div>
+                    
+                    <div class="p-8">
+                        <!-- Company Header -->
+                        <div class="flex justify-between items-start gap-4 pb-6 border-b border-slate-200">
+                            <div class="flex gap-4">
+                                <img id="prev-logo" src="../../../assets/img/logo.png" alt="Logo" class="w-14 h-14 object-contain border border-slate-200 rounded-xl p-1">
+                                <div>
+                                    <h3 id="prev-company-name" class="font-heading font-bold text-primary text-lg leading-none">In Deep Cleaning ID</h3>
+                                    <p id="prev-company-address" class="text-xs text-slate-600 mt-1">Ruko Ruby Commercial, Bekasi 17143</p>
+                                    <p class="text-xs text-slate-600"><span id="prev-company-wa">0877-4824-4464</span> • <span id="prev-company-email">admin@indeepcleaningid.com</span></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <h2 class="font-heading font-bold text-2xl text-primary tracking-tight">INVOICE</h2>
+                                <p class="text-xs text-slate-500 mt-1"># <span id="prev-number" class="font-mono font-bold text-primary">INV-20260901-001</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Meta -->
+                        <div class="grid grid-cols-2 gap-6 py-5 text-sm">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Ditagihkan Kepada</p>
+                                <p id="prev-cust-name" class="font-bold text-primary text-base">Nama Pelanggan</p>
+                                <p id="prev-cust-address" class="text-slate-600 text-xs leading-relaxed mt-1">Alamat Lengkap</p>
+                                <p class="text-xs text-slate-600 mt-1">WA: <span id="prev-cust-wa" class="font-medium">-</span></p>
+                            </div>
+                            <div class="text-right space-y-1">
+                                <div class="flex justify-between md:justify-end gap-4"><span class="text-slate-500 text-xs">Tanggal:</span><span id="prev-date" class="font-semibold text-primary text-xs">01 Sep 2026</span></div>
+                                <div class="flex justify-between md:justify-end gap-4"><span class="text-slate-500 text-xs">Jatuh Tempo:</span><span id="prev-due" class="font-semibold text-amber-600 text-xs">02 Sep 2026</span></div>
+                                <p class="text-[11px] text-amber-700 bg-amber-50 inline-block px-2 py-1 rounded-full font-medium mt-2">Pembayaran Max 1x24 jam</p>
+                            </div>
+                        </div>
+
+                        <!-- Items Table -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] tracking-wide">
+                                        <th class="text-left px-3 py-2.5 font-bold w-6">No</th>
+                                        <th class="text-left px-3 py-2.5 font-bold">Nama Barang</th>
+                                        <th class="text-left px-3 py-2.5 font-bold">Ukuran</th>
+                                        <th class="text-right px-3 py-2.5 font-bold">Harga</th>
+                                        <th class="text-center px-3 py-2.5 font-bold">Qty</th>
+                                        <th class="text-right px-3 py-2.5 font-bold">Diskon</th>
+                                        <th class="text-right px-3 py-2.5 font-bold">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prev-items" class="divide-y divide-slate-100">
+                                    <tr><td colspan="7" class="text-center py-8 text-slate-400">Belum ada item</td></tr>
+                                </tbody>
+                                <tfoot class="bg-slate-50 font-semibold">
+                                    <tr><td colspan="6" class="text-right px-3 py-2">Subtotal</td><td id="prev-subtotal" class="text-right px-3 py-2">Rp 0</td></tr>
+                                    <tr><td colspan="6" class="text-right px-3 py-2">PPN 0%</td><td class="text-right px-3 py-2">Rp 0</td></tr>
+                                    <tr class="bg-primary text-white"><td colspan="6" class="text-right px-3 py-3 font-bold text-sm">Grand Total</td><td id="prev-grand" class="text-right px-3 py-3 font-bold text-sm">Rp 0</td></tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Payment -->
+                        <div class="mt-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <p class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Metode Pembayaran</p>
+                            <p class="text-sm font-bold text-primary">Transfer Bank <span id="prev-bank">BCA</span> <span id="prev-bank-no" class="font-mono">5771491465</span> a/n <span id="prev-bank-an">Robby Aliasa Akbar</span></p>
+                            <p id="prev-terms" class="text-xs text-slate-600 mt-2">Pembayaran Max 1x24 jam, Pasca Pencucian</p>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="mt-10 flex justify-end">
+                            <div class="text-center">
+                                <p id="prev-sig-date" class="text-xs text-slate-600">Bekasi, 01 September 2026</p>
+                                <img id="prev-sig-logo" src="../../../assets/img/logo.png" alt="Logo" class="w-16 h-16 object-contain mx-auto my-3 opacity-90">
+                                <p class="text-xs font-bold text-primary">Finance In Deep Cleaning ID</p>
+                                <div class="w-32 h-px bg-slate-300 mx-auto mt-6"></div>
+                            </div>
+                        </div>
+
+                        <p class="text-center text-[10px] text-slate-400 mt-10">Terima kasih telah mempercayakan kebersihan soft furniture Anda kepada In Deep Cleaning ID • Metode QDWC</p>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-slate-500 mt-3 no-print">Gunakan tombol Download PDF untuk hasil cetak terbaik • Format A4 • Rekening di PDF bisa di-blok & copy (text-based)</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Sticky Bar (khusus HP admin) -->
+    <div class="mobile-sticky-bar no-print">
+        <button type="button" id="btn-mobile-preview" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm">👁️ Preview</button>
+        <button type="button" id="btn-mobile-pdf" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold text-sm shadow">📄 PDF</button>
+        <button type="button" id="btn-mobile-print" class="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold text-sm">🖨️ Print</button>
+    </div>
+
+    <!-- Modal Edit Company -->
+    <div id="modal-company" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-heading font-bold text-primary">⚙️ Edit Company</h3>
+                <button id="modal-close" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div><label class="text-xs font-semibold text-slate-600">Nama Perusahaan</label><input id="edit-name" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                <div><label class="text-xs font-semibold text-slate-600">Alamat</label><input id="edit-address" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs font-semibold text-slate-600">WA Display</label><input id="edit-wa" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">WA Link (62...)</label><input id="edit-wa-link" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                </div>
+                <div><label class="text-xs font-semibold text-slate-600">Email</label><input id="edit-email" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div><label class="text-xs font-semibold text-slate-600">Bank</label><input id="edit-bank" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">No Rekening</label><input id="edit-bank-no" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">a/n</label><input id="edit-bank-an" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></div>
+                </div>
+                <div><label class="text-xs font-semibold text-slate-600">Logo (upload, optional)</label><input id="edit-logo" type="file" accept="image/*" class="w-full text-sm"><p class="text-[11px] text-slate-500 mt-1">Kosongkan jika tidak ganti. Max 500KB.</p></div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button id="btn-save-company" class="flex-1 bg-primary text-white py-2.5 rounded-xl font-bold">Simpan</button>
+                <button id="btn-export-company" class="px-4 bg-amber-100 text-amber-800 rounded-xl font-semibold text-sm">Export company.js</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Scripts -->
+    <script src="../../../assets/data/pricelist.js"></script>
+    <script src="./customers.js"></script>
+    <script src="./company.js"></script>
+
+    <script>
+    // ========== GLOBAL STATE ==========
+    let company = typeof companyData !== 'undefined' ? {...companyData} : { name: "In Deep Cleaning ID", logo: "../../../assets/img/logo.png", address: "Ruko Ruby Commercial, Bekasi 17143", whatsapp: "0877-4824-4464", whatsappLink: "6287748244464", email: "admin@indeepcleaningid.com", rekening: { bank:"BCA", no:"5771491465", an:"Robby Aliasa Akbar"} };
+    // Merge customers from file + localStorage
+    let customers = [];
+    try {
+        const fileCustomers = typeof customersData !== 'undefined' ? customersData : [];
+        const ls = JSON.parse(localStorage.getItem('indeep_customers') || '[]');
+        // dedup by name+wa
+        const map = new Map();
+        [...fileCustomers, ...ls].forEach(c => map.set(c.name.toLowerCase()+'|'+c.whatsapp, c));
+        customers = Array.from(map.values());
+    } catch(e){ customers = typeof customersData !== 'undefined' ? [...customersData] : []; }
+
+    let items = [];
+    let logoBase64 = null;
+
+    // ========== HELPERS ==========
+    const fmtRp = n => new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR', maximumFractionDigits:0}).format(n);
+    const fmtDate = iso => {
+        if(!iso) return '-';
+        const d = new Date(iso);
+        return d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+    };
+    const fmtDateLong = iso => {
+        if(!iso) return '-';
+        const d = new Date(iso);
+        return d.toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});
+    };
+    function generateInvoiceNumber(){
+        const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+        let key = 'inv_counter_' + today;
+        let c = parseInt(localStorage.getItem(key) || '0') + 1;
+        localStorage.setItem(key, c);
+        return `INV-${today}-${String(c).padStart(3,'0')}`;
+    }
+    function getCompanyLogo(){ return logoBase64 || company.logo; }
+
+    // ========== INIT ==========
+    const elNum = document.getElementById('inv-number');
+    const elDate = document.getElementById('inv-date');
+    const elDue = document.getElementById('inv-due');
+    const elCustName = document.getElementById('cust-name');
+    const elCustAddr = document.getElementById('cust-address');
+    const elCustWa = document.getElementById('cust-wa');
+    const elDatalist = document.getElementById('cust-list');
+    const elHint = document.getElementById('cust-hint');
+    const elItemsContainer = document.getElementById('items-container');
+    const elTerms = document.getElementById('inv-terms');
+
+    function init(){
+        // date
+        const today = new Date().toISOString().slice(0,10);
+        elDate.value = today;
+        const due = new Date(); due.setDate(due.getDate()+1);
+        elDue.value = due.toISOString().slice(0,10);
+        // number
+        if(!localStorage.getItem('last_inv_number') || elNum.value===''){
+            elNum.value = generateInvoiceNumber();
+            localStorage.setItem('last_inv_number', elNum.value);
+        } else {
+            elNum.value = localStorage.getItem('last_inv_number');
+        }
+        // customers datalist
+        renderDatalist();
+        // company
+        loadCompanyToPreview();
+        // items
+        addItem();
+        // preview
+        updatePreview();
+        // bind
+        elDate.addEventListener('change', ()=>{ const d=new Date(elDate.value); d.setDate(d.getDate()+1); elDue.value=d.toISOString().slice(0,10); updatePreview(); });
+        elCustName.addEventListener('input', handleCustInput);
+        elCustAddr.addEventListener('input', updatePreview);
+        elCustWa.addEventListener('input', updatePreview);
+        elTerms.addEventListener('input', updatePreview);
+        document.getElementById('btn-regen').addEventListener('click', ()=>{ elNum.value=generateInvoiceNumber(); localStorage.setItem('last_inv_number', elNum.value); updatePreview(); });
+        document.getElementById('btn-add-item').addEventListener('click', addItem);
+        document.getElementById('btn-preview').addEventListener('click', updatePreview);
+        document.getElementById('btn-pdf').addEventListener('click', downloadPDF);
+        document.getElementById('btn-print').addEventListener('click', ()=> window.print());
+        // mobile sticky
+        document.getElementById('btn-mobile-preview').addEventListener('click', ()=> { updatePreview(); document.getElementById('invoice-preview').scrollIntoView({behavior:'smooth', block:'start'}); });
+        document.getElementById('btn-mobile-pdf').addEventListener('click', downloadPDF);
+        document.getElementById('btn-mobile-print').addEventListener('click', ()=> window.print());
+        const btnEdit = document.getElementById('btn-edit-company');
+        if(btnEdit) btnEdit.addEventListener('click', openCompanyModal);
+        document.getElementById('modal-close').addEventListener('click', closeCompanyModal);
+        document.getElementById('btn-save-company').addEventListener('click', saveCompany);
+        document.getElementById('btn-export-company').addEventListener('click', exportCompany);
+        const btnDlCust = document.getElementById('btn-download-customers');
+        if(btnDlCust) btnDlCust.addEventListener('click', exportCustomers);
+        // close modal click outside
+        document.getElementById('modal-company').addEventListener('click', e=>{ if(e.target.id==='modal-company') closeCompanyModal(); });
+    }
+
+    function renderDatalist(){
+        elDatalist.innerHTML = '';
+        customers.forEach(c=>{
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.label = `${c.address} • ${c.whatsapp}`;
+            elDatalist.appendChild(opt);
+        });
+    }
+
+    function handleCustInput(){
+        const val = elCustName.value.trim().toLowerCase();
+        const found = customers.find(c=> c.name.toLowerCase()===val);
+        if(found){
+            elCustAddr.value = found.address;
+            elCustWa.value = found.whatsapp;
+            elHint.classList.remove('hidden');
+        } else {
+            elHint.classList.add('hidden');
+        }
+        updatePreview();
+    }
+
+    // ========== ITEMS ==========
+    function addItem(){
+        const id = Date.now() + Math.random();
+        // auto fill first kasur price
+        let firstHarga = 0, firstUkuran = '', firstNama = 'kasur';
+        try {
+            if(typeof indeepPricelist !== 'undefined' && indeepPricelist.kasur && indeepPricelist.kasur[0]){
+                firstHarga = indeepPricelist.kasur[0].harga;
+                firstUkuran = indeepPricelist.kasur[0].ukuran;
+                firstNama = indeepPricelist.kasur[0].nama_barang;
+            }
+        } catch(e){ console.error('pricelist not loaded', e); }
+        items.push({ id, kategori:'kasur', nama_barang:firstNama, ukuran:firstUkuran, harga:firstHarga, qty:1, latex:false, lepasPasang:false, lebar75:false, diskon:0, total:firstHarga });
+        renderItems();
+    }
+
+    function renderItems(){
+        if(typeof indeepPricelist === 'undefined'){
+            elItemsContainer.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl">❌ Gagal load pricelist.js - cek path ../../../assets/data/pricelist.js<br>Pastikan file ada di Hostinger. Cek console (F12).</div>';
+            console.error('indeepPricelist undefined - cek path script');
+            return;
+        }
+        elItemsContainer.innerHTML = '';
+        const kategoriList = Object.keys(indeepPricelist);
+        items.forEach((it, idx)=>{
+            const div = document.createElement('div');
+            div.className = 'border border-slate-200 rounded-xl p-3 bg-slate-50/50';
+            // options kategori
+            const kategoriOpts = kategoriList.map(k=> `<option value="${k}" ${it.kategori===k?'selected':''}>${k}</option>`).join('');
+            // ukuran options based on kategori
+            const ukuranList = indeepPricelist[it.kategori] || [];
+            const ukuranOpts = ukuranList.map(u=> `<option value="${u.ukuran}" data-harga="${u.harga}" ${it.ukuran===u.ukuran?'selected':''}>${u.ukuran} - ${fmtRp(u.harga)}</option>`).join('');
+            // show tambahan kondisional
+            const showLatex = it.nama_barang === 'kasur';
+            const showSofaExtra = ['sofa','sofabed','recline','stool','kursi'].includes(it.nama_barang) || it.kategori==='sofa' || it.kategori==='sofabed';
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-primary">Item #${idx+1}</span>
+                    <button data-id="${it.id}" class="btn-remove text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full hover:bg-red-100">🗑️ Hapus</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600">Kategori</label>
+                        <select data-field="kategori" data-id="${it.id}" class="item-select w-full px-2 py-2 border border-slate-300 rounded-lg text-xs bg-white">${kategoriOpts}</select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600">Ukuran</label>
+                        <select data-field="ukuran" data-id="${it.id}" class="item-select w-full px-2 py-2 border border-slate-300 rounded-lg text-xs bg-white">${ukuranOpts ? ukuranOpts : '<option value="">-- pilih --</option>'}</select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-2">
+                    <div><label class="text-[11px] font-semibold text-slate-600">Harga</label><input type="text" value="${fmtRp(it.harga)}" readonly class="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600"></div>
+                    <div><label class="text-[11px] font-semibold text-slate-600">Qty</label><input data-field="qty" data-id="${it.id}" type="number" min="1" value="${it.qty}" class="item-input w-full px-2 py-2 border border-slate-300 rounded-lg text-xs text-center"></div>
+                    <div><label class="text-[11px] font-semibold text-slate-600">Diskon (Rp)</label><input data-field="diskon" data-id="${it.id}" type="number" min="0" value="${it.diskon}" class="item-input w-full px-2 py-2 border border-slate-300 rounded-lg text-xs"></div>
+                </div>
+                <div class="mt-2 space-y-1 bg-white rounded-lg p-2 border border-slate-200">
+                    <p class="text-[11px] font-bold text-slate-600 uppercase">Biaya Tambahan</p>
+                    <label class="flex items-center gap-2 text-xs ${showLatex?'':'opacity-40 pointer-events-none'}"><input type="checkbox" data-field="latex" data-id="${it.id}" ${it.latex?'checked':''} class="item-check rounded"> Kasur Latex +Rp 40.000</label>
+                    <label class="flex items-center gap-2 text-xs ${showSofaExtra?'':'opacity-40 pointer-events-none'}"><input type="checkbox" data-field="lepasPasang" data-id="${it.id}" ${it.lepasPasang?'checked':''} class="item-check rounded"> Sofa Lepas Pasang +Rp 20.000/seat</label>
+                    <label class="flex items-center gap-2 text-xs ${showSofaExtra?'':'opacity-40 pointer-events-none'}"><input type="checkbox" data-field="lebar75" data-id="${it.id}" ${it.lebar75?'checked':''} class="item-check rounded"> Sofa Lebar &gt;75cm +Rp 20.000/seat</label>
+                </div>
+                <div class="mt-2 text-right"><span class="text-xs text-slate-500">Total:</span> <span class="font-bold text-primary text-sm">${fmtRp(it.total)}</span></div>
+            `;
+            elItemsContainer.appendChild(div);
+        });
+        // bind
+        elItemsContainer.querySelectorAll('.item-select, .item-input, .item-check').forEach(el=>{
+            el.addEventListener('change', handleItemChange);
+            el.addEventListener('input', handleItemChange);
+        });
+        elItemsContainer.querySelectorAll('.btn-remove').forEach(btn=>{
+            btn.addEventListener('click', ()=> removeItem(btn.dataset.id));
+        });
+        calcTotals();
+        updatePreview();
+    }
+
+    function handleItemChange(e){
+        const id = e.target.dataset.id;
+        const field = e.target.dataset.field;
+        const it = items.find(x=> String(x.id)===String(id));
+        if(!it) return;
+        if(field==='kategori'){
+            it.kategori = e.target.value;
+            // reset ukuran to first option
+            const list = indeepPricelist[it.kategori] || [];
+            if(list.length>0){
+                it.ukuran = list[0].ukuran;
+                it.harga = list[0].harga;
+                it.nama_barang = list[0].nama_barang;
+            } else {
+                it.ukuran=''; it.harga=0;
+            }
+        } else if(field==='ukuran'){
+            it.ukuran = e.target.value;
+            const list = indeepPricelist[it.kategori] || [];
+            const found = list.find(u=> u.ukuran===it.ukuran);
+            if(found){ it.harga = found.harga; it.nama_barang = found.nama_barang; }
+        } else if(field==='qty'){
+            it.qty = Math.max(1, parseInt(e.target.value)||1);
+        } else if(field==='diskon'){
+            it.diskon = Math.max(0, parseInt(e.target.value)||0);
+        } else if(field==='latex'){
+            it.latex = e.target.checked;
+        } else if(field==='lepasPasang'){
+            it.lepasPasang = e.target.checked;
+        } else if(field==='lebar75'){
+            it.lebar75 = e.target.checked;
+        }
+        calcTotals();
+        renderItems();
+    }
+
+    function removeItem(id){
+        if(items.length<=1){ alert('Minimal 1 item'); return; }
+        items = items.filter(x=> String(x.id)!==String(id));
+        renderItems();
+    }
+
+    function calcTotals(){
+        items.forEach(it=>{
+            let tambahan = 0;
+            if(it.latex) tambahan += 40000 * it.qty;
+            if(it.lepasPasang) tambahan += 20000 * it.qty;
+            if(it.lebar75) tambahan += 20000 * it.qty;
+            let total = (it.harga * it.qty) + tambahan - (it.diskon||0);
+            if(total<0) total=0;
+            it.total = total;
+            it._tambahan = tambahan;
+        });
+        const subtotal = items.reduce((s, it)=> s+it.total, 0);
+        document.getElementById('sum-subtotal').textContent = fmtRp(subtotal);
+        document.getElementById('sum-grand').textContent = fmtRp(subtotal);
+        document.getElementById('pdf-filename').textContent = `${elNum.value} - ${(elCustName.value||'Customer')}.pdf`;
+    }
+
+    // ========== PREVIEW ==========
+    function updatePreview(){
+        // header
+        document.getElementById('prev-number').textContent = elNum.value || '-';
+        document.getElementById('prev-date').textContent = fmtDate(elDate.value);
+        document.getElementById('prev-due').textContent = fmtDate(elDue.value);
+        document.getElementById('prev-sig-date').textContent = `Bekasi, ${fmtDateLong(elDate.value)}`;
+        // cust
+        document.getElementById('prev-cust-name').textContent = elCustName.value || 'Nama Pelanggan';
+        document.getElementById('prev-cust-address').textContent = elCustAddr.value || 'Alamat Lengkap';
+        document.getElementById('prev-cust-wa').textContent = elCustWa.value || '-';
+        // company
+        loadCompanyToPreview();
+        // terms
+        document.getElementById('prev-terms').textContent = elTerms.value;
+        // items
+        const tbody = document.getElementById('prev-items');
+        if(items.length===0 || items.every(it=> it.harga===0)){
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">Belum ada item</td></tr>';
+        } else {
+            tbody.innerHTML = items.map((it, i)=>{
+                let tambahanText = [];
+                if(it.latex) tambahanText.push('Latex');
+                if(it.lepasPasang) tambahanText.push('LepasPasang');
+                if(it.lebar75) tambahanText.push('Lebar>75');
+                const tambahanStr = tambahanText.length ? `+${fmtRp(it._tambahan)} (${tambahanText.join(',')})` : '-';
+                return `<tr class="border-b border-slate-100">
+                    <td class="px-3 py-2 text-center">${i+1}</td>
+                    <td class="px-3 py-2 font-medium text-primary">${it.nama_barang}<br><span class="text-[10px] text-slate-500">${tambahanStr}</span></td>
+                    <td class="px-3 py-2">${it.ukuran}</td>
+                    <td class="px-3 py-2 text-right">${fmtRp(it.harga)}</td>
+                    <td class="px-3 py-2 text-center">${it.qty}</td>
+                    <td class="px-3 py-2 text-right">${it.diskon? fmtRp(it.diskon):'-'}</td>
+                    <td class="px-3 py-2 text-right font-bold text-primary">${fmtRp(it.total)}</td>
+                </tr>`;
+            }).join('');
+        }
+        const subtotal = items.reduce((s,it)=>s+it.total,0);
+        document.getElementById('prev-subtotal').textContent = fmtRp(subtotal);
+        document.getElementById('prev-grand').textContent = fmtRp(subtotal);
+    }
+
+    function loadCompanyToPreview(){
+        document.getElementById('prev-company-name').textContent = company.name;
+        document.getElementById('prev-company-address').textContent = company.address;
+        document.getElementById('prev-company-wa').textContent = company.whatsapp;
+        document.getElementById('prev-company-email').textContent = company.email;
+        document.getElementById('prev-bank').textContent = company.rekening.bank;
+        document.getElementById('prev-bank-no').textContent = company.rekening.no;
+        document.getElementById('prev-bank-an').textContent = company.rekening.an;
+        const logo = getCompanyLogo();
+        document.getElementById('prev-logo').src = logo;
+        const topLogo = document.getElementById('top-logo');
+        if(topLogo) topLogo.src = logo;
+        document.getElementById('prev-sig-logo').src = logo;
+    }
+
+    // ========== COMPANY MODAL ==========
+    function openCompanyModal(){
+        document.getElementById('edit-name').value = company.name;
+        document.getElementById('edit-address').value = company.address;
+        document.getElementById('edit-wa').value = company.whatsapp;
+        document.getElementById('edit-wa-link').value = company.whatsappLink;
+        document.getElementById('edit-email').value = company.email;
+        document.getElementById('edit-bank').value = company.rekening.bank;
+        document.getElementById('edit-bank-no').value = company.rekening.no;
+        document.getElementById('edit-bank-an').value = company.rekening.an;
+        document.getElementById('modal-company').classList.remove('hidden');
+        document.getElementById('modal-company').classList.add('flex');
+    }
+    function closeCompanyModal(){
+        document.getElementById('modal-company').classList.add('hidden');
+        document.getElementById('modal-company').classList.remove('flex');
+    }
+    function saveCompany(){
+        const fileInput = document.getElementById('edit-logo');
+        const newCompany = {
+            name: document.getElementById('edit-name').value,
+            address: document.getElementById('edit-address').value,
+            whatsapp: document.getElementById('edit-wa').value,
+            whatsappLink: document.getElementById('edit-wa-link').value,
+            email: document.getElementById('edit-email').value,
+            rekening: {
+                bank: document.getElementById('edit-bank').value,
+                no: document.getElementById('edit-bank-no').value,
+                an: document.getElementById('edit-bank-an').value
+            },
+            logo: company.logo
+        };
+        const handleSave = (logoVal)=>{
+            if(logoVal) newCompany.logo = logoVal;
+            company = newCompany;
+            localStorage.setItem('indeep_company', JSON.stringify(company));
+            // try save to server via save.php
+            const content = `const companyData = ${JSON.stringify(company, null, 2)};`;
+            fetch('./save.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type:'company', content})})
+                .then(r=>r.json()).then(res=>{ console.log('company save',res); }).catch(()=>{});
+            loadCompanyToPreview();
+            updatePreview();
+            alert('Company data saved! (tersimpan di browser & server)');
+            closeCompanyModal();
+        };
+        if(fileInput.files && fileInput.files[0]){
+            const reader = new FileReader();
+            reader.onload = e=> { logoBase64 = e.target.result; handleSave(logoBase64); };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            handleSave(null);
+        }
+    }
+    function exportCompany(){
+        const content = `const companyData = ${JSON.stringify(company, null, 2)};`;
+        const blob = new Blob([content], {type:'text/javascript'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download='company.js'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ========== CUSTOMER SAVE & EXPORT ==========
+    function saveCustomerIfNeeded(){
+        const name = elCustName.value.trim();
+        if(!name || !document.getElementById('cust-save').checked) return;
+        const addr = elCustAddr.value.trim();
+        const wa = elCustWa.value.trim();
+        if(!addr || !wa) return;
+        const exists = customers.find(c=> c.name.toLowerCase()===name.toLowerCase());
+        if(exists) return;
+        const newCust = { id: 'CUST-'+String(customers.length+1).padStart(3,'0'), name, address: addr, whatsapp: wa };
+        customers.push(newCust);
+        localStorage.setItem('indeep_customers', JSON.stringify(customers));
+        renderDatalist();
+        // auto save to server via save.php
+        const content = `const customersData = ${JSON.stringify(customers, null, 2)};`;
+        // wrap as JS file
+        const jsContent = `/* ============================================\n   INDEEP CLEANING ID - Database Pelanggan\n   Auto-generated ${new Date().toISOString()}\n   ============================================ */\n\nconst customersData = ${JSON.stringify(customers, null, 2)};\n`;
+        fetch('./save.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type:'customers', content: jsContent})})
+            .then(r=>r.json()).then(res=>{ console.log('customers save',res); const b=document.getElementById('btn-download-customers'); if(b) b.classList.remove('hidden'); }).catch(()=>{ const b=document.getElementById('btn-download-customers'); if(b) b.classList.remove('hidden'); });
+    }
+    function exportCustomers(){
+        const jsContent = `/* ============================================\n   INDEEP CLEANING ID - Database Pelanggan\n   Export ${new Date().toISOString()}\n   ============================================ */\n\nconst customersData = ${JSON.stringify(customers, null, 2)};\n`;
+        const blob = new Blob([jsContent], {type:'text/javascript'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download='customers.js'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // Helper: load logo as base64 (untuk PDF)
+    async function getLogoForPDF(){
+        // coba ambil dari <img> yang sudah ke-load di DOM (paling reliable, tanpa fetch)
+        const tryFromDOM = async () => {
+            try{
+                const domImg = document.getElementById('top-logo') || document.getElementById('prev-logo');
+                if(domImg && domImg.complete && domImg.naturalWidth > 0){
+                    const c = document.createElement('canvas');
+                    c.width = domImg.naturalWidth; c.height = domImg.naturalHeight;
+                    const ctx = c.getContext('2d');
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
+                    ctx.drawImage(domImg, 0, 0, c.width, c.height);
+                    return c.toDataURL('image/png');
+                }
+            } catch(e){ console.warn('DOM logo fail', e); }
+            return null;
+        };
+
+        const toPng = (dataUrl) => new Promise((resolve)=>{
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = ()=>{
+                try{
+                    const c = document.createElement('canvas');
+                    c.width = img.naturalWidth || 200; c.height = img.naturalHeight || 200;
+                    const ctx = c.getContext('2d');
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
+                    resolve(c.toDataURL('image/png'));
+                } catch(e){ resolve(dataUrl); }
+            };
+            img.onerror = ()=> resolve(dataUrl);
+            img.src = dataUrl;
+        });
+
+        // 1. coba dari DOM dulu (paling cepat & gak perlu fetch)
+        const domPng = await tryFromDOM();
+        if(domPng){
+            console.log('Logo from DOM converted to PNG');
+            return domPng;
+        }
+
+        // 2. fallback fetch
+        const src = getCompanyLogo();
+        try{
+            let dataUrl = src;
+            if(!src.startsWith('data:')){
+                const res = await fetch(src);
+                if(!res.ok) throw new Error('fetch logo failed ' + res.status);
+                const blob = await res.blob();
+                dataUrl = await new Promise((resolve,reject)=>{
+                    const reader = new FileReader();
+                    reader.onloadend = ()=> resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+            const png = await toPng(dataUrl);
+            console.log('Logo fetched & converted');
+            return png;
+        } catch(e){
+            console.warn('Logo fetch gagal, skip logo di PDF', e);
+            return null;
+        }
+    }
+
+    // ========== PDF FALLBACK TEXT-BASED (Work 100% di file://) ==========
+    async function generateTextPDF(){
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p','mm','a4');
+        const left = 12, right = 198;
+        let y = 14;
+        // Header accent
+        pdf.setFillColor(244,161,0); pdf.rect(0,0,210,3,'F');
+        pdf.setFillColor(6,44,61); pdf.rect(0,3,210,6,'F');
+        // Logo kiri atas
+        const logoData = await getLogoForPDF();
+        if(logoData){
+            try{ pdf.addImage(logoData, 'PNG', left, y+3, 12, 12); } catch(e){ try{ pdf.addImage(logoData, 'WEBP', left, y+3, 12, 12); } catch(e2){ console.warn('logo addImage fail', e2); } }
+            pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(6,44,61);
+            pdf.text(company.name, left+15, y+10);
+        } else {
+            pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(6,44,61);
+            pdf.text(company.name, left, y+10);
+        }
+        pdf.setFontSize(7); pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80);
+        pdf.text(company.address, left, y+14);
+        pdf.text(company.whatsapp + ' • ' + company.email, left, y+18);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(18); pdf.setTextColor(6,44,61);
+        pdf.text('INVOICE', right, y+10, {align:'right'});
+        pdf.setFontSize(8); pdf.text('# ' + elNum.value, right, y+16, {align:'right'});
+        y += 24;
+        pdf.setDrawColor(220,220,220); pdf.line(left, y, right, y); y+=6;
+        // Customer & Meta
+        pdf.setFontSize(7); pdf.setTextColor(100,100,100); pdf.text('DITAGIHKAN KEPADA', left, y);
+        pdf.text('TANGGAL', right-38, y); pdf.text('JATUH TEMPO', right-38, y+5);
+        y+=4;
+        pdf.setFontSize(10); pdf.setTextColor(6,44,61); pdf.setFont('helvetica','bold');
+        pdf.text(elCustName.value || 'Nama Pelanggan', left, y);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
+        pdf.text(fmtDate(elDate.value), right, y, {align:'right'});
+        y+=5;
+        pdf.setFontSize(7); pdf.setTextColor(80,80,80);
+        const addrLines = pdf.splitTextToSize(elCustAddr.value || 'Alamat Lengkap', 95);
+        pdf.text(addrLines, left, y);
+        pdf.setTextColor(180,80,0); pdf.setFont('helvetica','bold');
+        pdf.text(fmtDate(elDue.value), right, y, {align:'right'});
+        y+= Math.max(addrLines.length*3.5, 6) + 2;
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80); pdf.setFontSize(7);
+        pdf.text('WA: ' + (elCustWa.value||'-'), left, y);
+        y+=8;
+        // Table header
+        pdf.setFillColor(248,250,252); pdf.rect(left, y, right-left, 7, 'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(6.5); pdf.setTextColor(80,80,80);
+        pdf.text('No', left+2, y+4.5);
+        pdf.text('Nama Barang', left+10, y+4.5);
+        pdf.text('Ukuran', left+55, y+4.5);
+        pdf.text('Harga', left+85, y+4.5, {align:'right'});
+        pdf.text('Qty', left+105, y+4.5, {align:'center'});
+        pdf.text('Diskon', left+130, y+4.5, {align:'right'});
+        pdf.text('Total', right-2, y+4.5, {align:'right'});
+        y+=7;
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(30,30,30);
+        items.forEach((it,i)=>{
+            if(y>265){ pdf.addPage(); y=12; }
+            pdf.setFontSize(7.5);
+            pdf.text(String(i+1), left+2, y+4);
+            pdf.setFont('helvetica','bold'); pdf.text(it.nama_barang, left+10, y+4); pdf.setFont('helvetica','normal');
+            let add = [];
+            if(it.latex) add.push('Latex');
+            if(it.lepasPasang) add.push('LepasPasang');
+            if(it.lebar75) add.push('Lebar>75');
+            if(add.length){ pdf.setFontSize(5.5); pdf.setTextColor(120,120,120); pdf.text('+'+add.join(','), left+10, y+7); pdf.setTextColor(30,30,30); pdf.setFontSize(7.5); }
+            pdf.text(it.ukuran, left+55, y+4);
+            pdf.text(fmtRp(it.harga), left+85, y+4, {align:'right'});
+            pdf.text(String(it.qty), left+105, y+4, {align:'center'});
+            pdf.text(it.diskon? fmtRp(it.diskon):'-', left+130, y+4, {align:'right'});
+            pdf.setFont('helvetica','bold'); pdf.text(fmtRp(it.total), right-2, y+4, {align:'right'}); pdf.setFont('helvetica','normal');
+            y+=9;
+            pdf.setDrawColor(240,240,240); pdf.line(left, y, right, y);
+        });
+        y+=3;
+        const subtotal = items.reduce((s,it)=>s+it.total,0);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(80,80,80);
+        pdf.text('Subtotal', right-30, y, {align:'right'}); pdf.text(fmtRp(subtotal), right-2, y, {align:'right'}); y+=5;
+        pdf.text('PPN 0%', right-30, y, {align:'right'}); pdf.text('Rp 0', right-2, y, {align:'right'}); y+=6;
+        pdf.setFillColor(6,44,61); pdf.rect(right-55, y-4, 55, 8, 'F');
+        pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
+        pdf.text('Grand Total', right-32, y, {align:'right'}); pdf.text(fmtRp(subtotal), right-2, y, {align:'right'}); y+=10;
+        pdf.setTextColor(30,30,30);
+        // Payment
+        pdf.setFillColor(248,250,252); pdf.rect(left, y, right-left, 14, 'F');
+        pdf.setDrawColor(220,220,220); pdf.rect(left, y, right-left, 14);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(7); pdf.setTextColor(80,80,80);
+        pdf.text('METODE PEMBAYARAN', left+3, y+4);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(6,44,61);
+        pdf.text(`Transfer ${company.rekening.bank} ${company.rekening.no} a/n ${company.rekening.an}`, left+3, y+9);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); pdf.setTextColor(100,100,100);
+        pdf.text(elTerms.value, left+3, y+12);
+        y+=22;
+        pdf.setFontSize(7); pdf.setTextColor(80,80,80);
+        pdf.text(`Bekasi, ${fmtDateLong(elDate.value)}`, right, y, {align:'right'}); y+=4;
+        // Logo tanda tangan
+        if(logoData){
+            try{
+                // logo 14x14 di tengah area tanda tangan kanan
+                pdf.addImage(logoData, 'PNG', right-22, y, 14, 14);
+            } catch(e){ try{ pdf.addImage(logoData, 'WEBP', right-22, y, 14, 14); } catch(e2){} }
+            y+=16;
+        } else {
+            y+=4;
+        }
+        pdf.setFont('helvetica','bold'); pdf.setTextColor(6,44,61); pdf.setFontSize(8);
+        pdf.text('Finance In Deep Cleaning ID', right, y, {align:'right'});
+        pdf.setFontSize(6); pdf.setTextColor(150,150,150); pdf.setFont('helvetica','normal');
+        pdf.text('Terima kasih telah mempercayakan kebersihan soft furniture Anda kepada In Deep Cleaning ID • Metode QDWC', 105, 287, {align:'center'});
+        const filename = `${elNum.value} - ${(elCustName.value || 'Customer').replace(/[^a-zA-Z0-9 ]/g,'').trim()}.pdf`;
+        pdf.save(filename);
+    }
+
+    // ========== PDF ==========
+    async function downloadPDF(){
+        saveCustomerIfNeeded();
+        updatePreview();
+        const btn = document.getElementById('btn-pdf');
+        const loading = document.getElementById('pdf-loading');
+        if(typeof window.jspdf === 'undefined'){
+            alert('❌ jsPDF belum ke-load. Cek koneksi internet / CDN.\\nCoba hard refresh (Ctrl+Shift+R).');
+            return;
+        }
+        // validasi data
+        if(!elCustName.value.trim() || !elCustAddr.value.trim()){
+            if(!confirm('Nama / Alamat pelanggan masih kosong. Tetap download PDF?')) return;
+        }
+        if(items.length===0 || items.every(it=> it.harga===0)){
+            alert('⚠️ Belum ada item layanan. Tambah item dulu.');
+            return;
+        }
+        btn.disabled = true; loading.classList.remove('hidden');
+        btn.innerHTML = '⏳ Generating... <span id="pdf-loading" class="">⏳</span>';
+        localStorage.setItem('last_inv_number', elNum.value);
+        try{
+            // MODE UTAMA: Text-based PDF (100% selectable, rekening bisa di-copy + logo)
+            await generateTextPDF();
+            console.log('PDF text-based saved (selectable + logo)');
+        } catch(e){
+            console.error('PDF Text Error:', e);
+            alert('❌ Gagal generate PDF: ' + e.message);
+        } finally {
+            btn.disabled = false; 
+            btn.innerHTML = '📄 Download PDF <span id="pdf-loading" class="hidden animate-spin">⏳</span>';
+            const newLoading = document.getElementById('pdf-loading');
+            if(newLoading) newLoading.classList.add('hidden');
+        }
+    }
+    // Single mode: Text-based only (selectable + logo) - no screenshot mode
+
+    // Load company from localStorage if exists
+    try{
+        const lsComp = JSON.parse(localStorage.getItem('indeep_company') || 'null');
+        if(lsComp) { company = lsComp; if(lsComp.logo && lsComp.logo.startsWith('data:')) logoBase64 = lsComp.logo; }
+    } catch(e){}
+
+    // Init on load
+    document.addEventListener('DOMContentLoaded', init);
+    // auto update preview on any change every 500ms
+    setInterval(updatePreview, 600);
+    </script>
+</body>
+</html>

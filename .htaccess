@@ -1,0 +1,163 @@
+# ============================================
+# INDEEP CLEANING ID - Redirect & Clean URL Rules
+# ============================================
+
+RewriteEngine On
+RewriteBase /
+
+# 0. Redirect HTTP to HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 0a. Redirect www to non-www
+RewriteCond %{HTTP_HOST} ^www\.indeepcleaningid\.site [NC]
+RewriteRule ^(.*)$ https://indeepcleaningid.site/$1 [L,R=301]
+
+# 1. Redirect /index.html → /
+RewriteRule ^index\.html$ / [R=301,L]
+
+# 2. Redirect /about.html → /about
+RewriteRule ^about\.html$ /about [R=301,L]
+
+# 3. Redirect /contact.html → /contact
+RewriteRule ^contact\.html$ /contact [R=301,L]
+
+# 4. Redirect /gallery.html → /gallery
+RewriteRule ^gallery\.html$ /gallery [R=301,L]
+
+# 5. Redirect /pricing-estimator.html → /pricing-estimator
+RewriteRule ^pricing-estimator\.html$ /pricing-estimator [R=301,L]
+
+# 6. Redirect /coverage.html → /coverage
+RewriteRule ^coverage\.html$ /coverage [R=301,L]
+
+# 7. Redirect /services/index.html → /services/
+RewriteRule ^services/index\.html$ /services/ [R=301,L]
+
+# 7a. Redirect /services (no trailing slash) → /services/
+RewriteRule ^services$ /services/ [R=301,L]
+
+# 8. Redirect /services/cuci-kasur.html → /services/cuci-kasur
+RewriteRule ^services/cuci-kasur\.html$ /services/cuci-kasur [R=301,L]
+
+# 9. Redirect /services/cuci-sofa.html → /services/cuci-sofa
+RewriteRule ^services/cuci-sofa\.html$ /services/cuci-sofa [R=301,L]
+
+# 10. Redirect /services/cuci-karpet-gordyn.html → /services/cuci-karpet-gordyn
+RewriteRule ^services/cuci-karpet-gordyn\.html$ /services/cuci-karpet-gordyn [R=301,L]
+
+# 11. Redirect /services/interior-mobil.html → /services/interior-mobil
+RewriteRule ^services/interior-mobil\.html$ /services/interior-mobil [R=301,L]
+
+# 12. Redirect /services/baby-stuff.html → /services/baby-stuff
+RewriteRule ^services/baby-stuff\.html$ /services/baby-stuff [R=301,L]
+
+# 13. Internal rewrite: /about → /about.html (user sees clean URL)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^about$ /about.html [L]
+
+# 14. Internal rewrite: /contact → /contact.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^contact$ /contact.html [L]
+
+# 15. Internal rewrite: /gallery → /gallery.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^gallery$ /gallery.html [L]
+
+# 16. Internal rewrite: /pricing-estimator → /pricing-estimator.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^pricing-estimator$ /pricing-estimator.html [L]
+
+# 17. Internal rewrite: /coverage → /coverage.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^coverage$ /coverage.html [L]
+
+# 18. Internal rewrite: /services/ → /services/index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/$ /services/index.html [L]
+
+# 19. Internal rewrite: /services/cuci-kasur → /services/cuci-kasur.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/cuci-kasur$ /services/cuci-kasur.html [L]
+
+# 20. Internal rewrite: /services/cuci-sofa → /services/cuci-sofa.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/cuci-sofa$ /services/cuci-sofa.html [L]
+
+# 21. Internal rewrite: /services/cuci-karpet-gordyn → /services/cuci-karpet-gordyn.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/cuci-karpet-gordyn$ /services/cuci-karpet-gordyn.html [L]
+
+# 22. Internal rewrite: /services/interior-mobil → /services/interior-mobil.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/interior-mobil$ /services/interior-mobil.html [L]
+
+# 23. Internal rewrite: /services/baby-stuff → /services/baby-stuff.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^services/baby-stuff$ /services/baby-stuff.html [L]
+
+# 24. Clean URL for /landingpage/v2
+RewriteRule ^landingpage/v2\.html$ /landingpage/v2 [R=301,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^landingpage/v2$ /landingpage/v2.html [L]
+
+# ============================================
+# PERFORMANCE & SECURITY HEADERS
+# ============================================
+
+# Enable Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+
+# Cache-Control Headers
+<IfModule mod_headers.c>
+    <FilesMatch "\.(webp|jpg|jpeg|png|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=604800, stale-while-revalidate=86400"
+    </FilesMatch>
+</IfModule>
+
+# Gzip Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE application/xml
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Custom 404 Page
+ErrorDocument 404 /404.html
+

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Halaman Utama -->
+  <url>
+    <loc>https://indeepcleaningid.site/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>1.0</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <!-- Halaman Statis -->
+  <url>
+    <loc>https://indeepcleaningid.site/about</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/contact</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/coverage</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/gallery</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/pricing-estimator</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Halaman Layanan (Clean URLs) -->
+  <url>
+    <loc>https://indeepcleaningid.site/services/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.9</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/services/cuci-kasur</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/services/cuci-sofa</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/services/cuci-karpet-gordyn</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/services/interior-mobil</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/services/baby-stuff</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Halaman Landing Page Khusus Iklan & Konversi -->
+  <url>
+    <loc>https://indeepcleaningid.site/landingpage/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://indeepcleaningid.site/landingpage/v2</loc>
+    <lastmod>2026-09-01</lastmod>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+</urlset>
