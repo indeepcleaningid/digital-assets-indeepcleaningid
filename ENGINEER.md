@@ -43,6 +43,22 @@ terpisah). Bersihkan referensi di `sitemap.xml` dan `.htaccess`.
 
 **File:** `sitemap.xml`, `.htaccess`, `invoice/`, `landingpage/`
 
+### Update README.md sinkron dengan struktur terkini
+
+**Apa:** Perbarui README.md setelah penghapusan folder `invoice/` dan
+`landingpage/`. Hapus referensi ke folder yang sudah dihapus, perbarui
+nama repo dan URL clone.
+
+**Kenapa:** README harus mencerminkan kondisi aktual repository.
+
+**Yang berubah:**
+- Hapus `invoice/` dan `landingpage/` dari diagram struktur
+- Tandai `booking/` sebagai "[akan ditambahkan]"
+- Update nama repo di diagram struktur
+- Update URL clone di bagian Local Development
+
+**File:** `README.md`
+
 ---
 
 ## Format Entry

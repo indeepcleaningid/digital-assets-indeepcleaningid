@@ -18,7 +18,7 @@ Ini adalah **monorepo** yang berisi seluruh aset digital bisnis InDeep CleaningI
 ### Struktur Repository
 
 ```
-indeepcleaningid/ (monorepo)
+digital-assets-indeepcleaningid/ (monorepo)
 │
 ├── index.html                  ← Halaman utama
 ├── about.html                  ← Tentang kami
@@ -42,13 +42,7 @@ indeepcleaningid/ (monorepo)
 │   ├── interior-mobil.html
 │   └── baby-stuff.html
 │
-├── landingpage/                ← Landing page
-│   └── v2.html
-│
-├── invoice/                    ← Sistem invoice
-│   └── admin/
-│
-├── booking/                    ← App booking (subdomain)
+├── booking/                    ← App booking (subdomain) [akan ditambahkan]
 │   └── [app-booking source]
 │
 ├── .htaccess                   ← URL rewriting & redirect rules
@@ -74,8 +68,8 @@ Karena ini website static, lo bisa langsung buka file HTML di browser:
 
 ```bash
 # Clone repo
-git clone https://github.com/indeepcleaningid/indeepcleaningid.git
-cd indeepcleaningid
+git clone https://github.com/indeepcleaningid/digital-assets-indeepcleaningid.git
+cd digital-assets-indeepcleaningid
 
 # Buka di browser (atau pakai Live Server di VS Code)
 open index.html
