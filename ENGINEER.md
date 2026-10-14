@@ -25,6 +25,24 @@ memudahkan deploy via GitHub → Hostinger Git.
 
 **File:** `.gitignore`, `README.md`, `LICENSE`, `CONTRIBUTING.md`, `ENGINEER.md`
 
+### Hapus folder invoice/ dan landingpage/
+
+**Apa:** Hapus folder `invoice/` (app lama yang sudah tidak dipakai) dan
+`landingpage/` (landing page ads lama yang akan dibuat ulang di subdomain
+terpisah). Bersihkan referensi di `sitemap.xml` dan `.htaccess`.
+
+**Kenapa:** `invoice/` adalah app lama yang sudah tidak digunakan.
+`landingpage/` akan diganti dengan landing page baru di subdomain khusus
+(terpisah dari website utama).
+
+**Yang berubah:**
+- Hapus folder `invoice/` (5 file)
+- Hapus folder `landingpage/` (1 file: `v2.html`)
+- Hapus 2 entry landing page dari `sitemap.xml`
+- Hapus rewrite rules `/landingpage/v2` dari `.htaccess`
+
+**File:** `sitemap.xml`, `.htaccess`, `invoice/`, `landingpage/`
+
 ---
 
 ## Format Entry

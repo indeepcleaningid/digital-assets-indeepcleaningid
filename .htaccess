@@ -107,12 +107,6 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^services/baby-stuff$ /services/baby-stuff.html [L]
 
-# 24. Clean URL for /landingpage/v2
-RewriteRule ^landingpage/v2\.html$ /landingpage/v2 [R=301,L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^landingpage/v2$ /landingpage/v2.html [L]
-
 # ============================================
 # PERFORMANCE & SECURITY HEADERS
 # ============================================

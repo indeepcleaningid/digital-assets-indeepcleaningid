@@ -79,18 +79,4 @@
     <changefreq>monthly</changefreq>
   </url>
 
-  <!-- Halaman Landing Page Khusus Iklan & Konversi -->
-  <url>
-    <loc>https://indeepcleaningid.site/landingpage/</loc>
-    <lastmod>2026-09-01</lastmod>
-    <priority>0.9</priority>
-    <changefreq>weekly</changefreq>
-  </url>
-  <url>
-    <loc>https://indeepcleaningid.site/landingpage/v2</loc>
-    <lastmod>2026-09-01</lastmod>
-    <priority>0.9</priority>
-    <changefreq>weekly</changefreq>
-  </url>
-
 </urlset>
