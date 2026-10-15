@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Timezone WIB diset dari kode: bootstrap + SET time_zone DB + jendela rate limit seragam PHP — issue #18, PR ini
+### Timezone WIB diset dari kode: bootstrap + SET time_zone DB + jendela rate limit seragam PHP — issue #18, PR #36 (PR ini)
 
 - **Apa**: (1) `app/lib/bootstrap.php` → `date_default_timezone_set('Asia/Jakarta')`
   sebelum require apa pun — berlaku untuk semua endpoint & skrip cron; (2)
