@@ -16,6 +16,7 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/response.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/request.php';
 
 // Log error ke file (PRD Bab 18) — di luar public_html, aman untuk shared hosting.
 // Kalau folder tidak bisa dibuat/ditulis, diamkan (error_log default tetap jalan).

@@ -226,7 +226,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at DATETIME NOT NULL,
   KEY idx_audit_logs_booking (booking_id),
   KEY idx_audit_logs_actor (actor_id),
-  KEY idx_audit_logs_created (created_at)
+  KEY idx_audit_logs_created (created_at),
+  KEY idx_audit_logs_action (action)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

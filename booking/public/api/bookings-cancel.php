@@ -22,11 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $user = require_login();
 session_write_close(); // read-only session, lepas lock (lihat catatan di bookings-create)
 
-$raw  = file_get_contents('php://input');
-$body = json_decode($raw ?: '', true);
-if (!is_array($body)) {
-    json_error(400, 'bad_request', 'Data yang dikirim belum benar.');
-}
+$body = read_json_body();
 
 $id = (int) ($body['id'] ?? 0);
 $reason = trim((string) ($body['reason'] ?? ''));

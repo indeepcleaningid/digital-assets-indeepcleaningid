@@ -192,15 +192,28 @@ if ($page > $totalPages) {
     $offset = ($page - 1) * $limit;
 }
 
+// Halaman user dulu (LIMIT), lalu agregat-nya di-join lewat subquery beragregasi
+// — hindari 3 korelasi subquery per baris (issue #4: N+1).
 $st = $pdo->prepare(
-    "SELECT u.id, u.name, u.email, u.phone_primary, u.profile_complete,
-            (SELECT COUNT(*) FROM bookings b WHERE b.user_id = u.id) AS total_bookings,
-            (SELECT a.label FROM addresses a WHERE a.user_id = u.id AND a.is_default = 1 LIMIT 1) AS default_address,
-            (SELECT MAX(b.slot_date) FROM bookings b WHERE b.user_id = u.id) AS last_booking
-     FROM users u
-     WHERE $where
-     ORDER BY u.id DESC
-     LIMIT $limit OFFSET $offset"
+    "SELECT page.id, page.name, page.email, page.phone_primary, page.profile_complete,
+            COALESCE(bk.total_bookings, 0) AS total_bookings,
+            ad.default_address,
+            bk.last_booking
+     FROM (
+         SELECT u.id, u.name, u.email, u.phone_primary, u.profile_complete
+         FROM users u
+         WHERE $where
+         ORDER BY u.id DESC
+         LIMIT $limit OFFSET $offset
+     ) AS page
+     LEFT JOIN (
+         SELECT user_id, COUNT(*) AS total_bookings, MAX(slot_date) AS last_booking
+         FROM bookings GROUP BY user_id
+     ) AS bk ON bk.user_id = page.id
+     LEFT JOIN (
+         SELECT user_id, MIN(label) AS default_address
+         FROM addresses WHERE is_default = 1 GROUP BY user_id
+     ) AS ad ON ad.user_id = page.id"
 );
 $st->execute($params);
 $rows = $st->fetchAll();

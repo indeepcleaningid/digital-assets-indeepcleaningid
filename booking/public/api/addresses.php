@@ -18,11 +18,7 @@ $user = require_login();
 $userId = (int) $user['id'];
 $method = $_SERVER['REQUEST_METHOD'];
 
-$raw  = file_get_contents('php://input');
-$body = json_decode($raw ?: '', true);
-if (!is_array($body)) {
-    $body = [];
-}
+$body = read_json_body(false);
 
 $id = isset($body['id']) ? (int) $body['id'] : (int) ($_GET['id'] ?? 0);
 
