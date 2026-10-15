@@ -165,7 +165,7 @@ export default function AdminPricelist() {
 
       <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full table-fixed text-left text-base">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               {COLUMNS.map((c) => (
                 <th key={c.key} className={`p-4 ${c.cls || ''}`} aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -288,7 +288,7 @@ export default function AdminPricelist() {
                     disabled={busy}
                     onClick={() => toggleAktif(r)}
                     className={
-                      'rounded-lg border-2 border-black px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
+                      'rounded-lg border-2 border-ink px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
                       (r.is_active ? 'bg-green-200' : 'bg-gray-200')
                     }
                   >
@@ -318,7 +318,7 @@ export default function AdminPricelist() {
                 disabled={busy}
                 onClick={() => toggleAktif(r)}
                 className={
-                  'shrink-0 rounded-lg border-2 border-black px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
+                  'shrink-0 rounded-lg border-2 border-ink px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
                   (r.is_active ? 'bg-green-200' : 'bg-gray-200')
                 }
               >

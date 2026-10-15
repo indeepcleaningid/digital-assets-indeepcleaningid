@@ -64,14 +64,14 @@ export default function StepItem({
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
         <input
           type="search"
-          className="w-full rounded-xl border-2 border-ink bg-white px-3 py-2"
+          className="input-brutal"
           placeholder="Cari barang, ukuran…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Cari barang"
         />
         <select
-          className="rounded-xl border-2 border-ink bg-white px-3 py-2 font-bold"
+          className="input-brutal font-bold"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           aria-label="Filter kategori"

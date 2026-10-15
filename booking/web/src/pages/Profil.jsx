@@ -40,7 +40,7 @@ export default function Profil() {
         </p>
         <p
           className={
-            'mt-3 inline-block rounded-xl border-2 border-black px-3 py-1 text-sm font-bold ' +
+            'mt-3 inline-block rounded-xl border-2 border-ink px-3 py-1 text-sm font-bold ' +
             (user.profile_complete ? 'bg-green-200' : 'bg-yellow-200')
           }
         >

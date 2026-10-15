@@ -107,7 +107,7 @@ export default function AdminReports() {
               {/* overflow-x-auto — "Nilai" Rupiah panjang bisa luber di HP (issue #3) */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b-2 border-black">
+                  <thead className="border-b-2 border-ink">
                     <tr>
                       <th className="p-2 font-bold">Status</th>
                       <th className="p-2 font-bold">Jumlah</th>
@@ -134,7 +134,7 @@ export default function AdminReports() {
               {/* overflow-x+y-auto — daftar panjang scroll vertikal; kolom angka aman di HP */}
               <div className="max-h-80 overflow-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="sticky top-0 border-b-2 border-black bg-white">
+                  <thead className="sticky top-0 border-b-2 border-ink bg-white">
                     <tr>
                       <th className="p-2 font-bold">Tanggal</th>
                       <th className="p-2 font-bold">Jumlah</th>

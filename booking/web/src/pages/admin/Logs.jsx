@@ -82,7 +82,7 @@ export default function AdminLogs() {
 
       <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full text-left text-sm">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               <th className="p-3 font-extrabold">Waktu (UTC)</th>
               <th className="p-3 font-extrabold">Pelaku</th>
@@ -102,7 +102,7 @@ export default function AdminLogs() {
                 <td className="p-3 whitespace-nowrap">{l.created_at}</td>
                 <td className="p-3">
                   {l.actor_id ? `#${l.actor_id}` : '—'}
-                  <span className="ml-1 rounded border border-black px-1 text-xs">{l.actor_role}</span>
+                  <span className="ml-1 rounded border border-ink px-1 text-xs">{l.actor_role}</span>
                 </td>
                 <td className="p-3 font-bold">{aksiLabel(l.action)}</td>
                 <td className="p-3">{l.booking_id ?? '—'}</td>
@@ -132,7 +132,7 @@ export default function AdminLogs() {
             </div>
             <p className="mt-1 text-sm">
               {l.actor_id ? `#${l.actor_id}` : '—'}
-              <span className="ml-1 rounded border border-black px-1 text-xs">{l.actor_role}</span>
+              <span className="ml-1 rounded border border-ink px-1 text-xs">{l.actor_role}</span>
               {l.booking_id ? <span className="ml-2">Booking #{l.booking_id}</span> : null}
             </p>
             {l.from_status || l.to_status ? (

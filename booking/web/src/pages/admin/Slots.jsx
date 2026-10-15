@@ -159,10 +159,10 @@ export default function AdminSlots() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3 text-sm font-bold">
-        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-green-200" /> Tersedia</span>
-        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-red-300" /> Penuh</span>
-        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-gray-300" /> Terkunci</span>
-        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-black bg-white" /> Selasa (libur)</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-ink bg-green-200" /> Tersedia</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-ink bg-red-300" /> Penuh</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-ink bg-gray-300" /> Terkunci</span>
+        <span className="flex items-center gap-1"><span className="h-4 w-4 rounded border-2 border-ink bg-white" /> Selasa (libur)</span>
       </div>
 
       {error ? (
@@ -178,7 +178,7 @@ export default function AdminSlots() {
         <>
         <div className="card hidden overflow-x-auto p-0 lg:block">
           <table className="w-full text-sm">
-            <thead className="border-b-2 border-black bg-paper">
+            <thead className="border-b-2 border-ink bg-paper">
               <tr>
                 <th className="p-3 text-left font-extrabold">Tanggal</th>
                 <th className="p-3 text-left font-extrabold">Pagi 09.00</th>
@@ -198,7 +198,7 @@ export default function AdminSlots() {
                       if (isSelasa) {
                         return (
                           <td key={jam} className="p-3">
-                            <span className="inline-block rounded-lg border-2 border-black bg-white px-3 py-1 text-xs font-bold text-gray-400">
+                            <span className="inline-block rounded-lg border-2 border-ink bg-white px-3 py-1 text-xs font-bold text-gray-400">
                               Libur (Selasa)
                             </span>
                           </td>
@@ -213,7 +213,7 @@ export default function AdminSlots() {
                           <button
                             type="button"
                             onClick={() => bukaAksi(s)}
-                            className={`rounded-lg border-2 border-black px-3 py-1 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
+                            className={`rounded-lg border-2 border-ink px-3 py-1 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
                           >
                             <p>{cellLabel(s)}</p>
                             <p className="font-normal">{s.booked}/{s.capacity} terisi</p>
@@ -240,7 +240,7 @@ export default function AdminSlots() {
                   {['09.00', '13.00'].map((jam) => {
                     if (isSelasa) {
                       return (
-                        <span key={jam} className="rounded-lg border-2 border-black bg-white px-3 py-2 text-center text-xs font-bold text-gray-400">
+                        <span key={jam} className="rounded-lg border-2 border-ink bg-white px-3 py-2 text-center text-xs font-bold text-gray-400">
                           Libur (Selasa)
                         </span>
                       )
@@ -254,7 +254,7 @@ export default function AdminSlots() {
                         key={jam}
                         type="button"
                         onClick={() => bukaAksi(s)}
-                        className={`rounded-lg border-2 border-black px-3 py-2 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
+                        className={`rounded-lg border-2 border-ink px-3 py-2 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
                       >
                         <p>{formatSlotTime(jam)}</p>
                         <p>{cellLabel(s)} · {s.booked}/{s.capacity}</p>

@@ -10,6 +10,31 @@
 
 ## 2026-10-16
 
+### FE polish: seragamkan token CSS — border-ink, shadow-brutal-sm, input-brutal (batch 3c) — issue #3
+
+- **Apa**:
+  - `border-black` → `border-ink` di **semua JSX (17 file)** — `--color-ink:
+    #000000` (hitam identik, murni konsistensi token, visual tak berubah).
+  - `shadow-[3px_3px_0_0_#000000]` (Login) → token `shadow-brutal-sm` (nilai
+    sama persis). `shadow-[2px_...]` hover **tidak diubah** — itu pola inline
+    `.btn-press`, gak punya token sendiri (bukan bagian issue).
+  - Styling input manual → token `.input-brutal`: `fieldClass` wizard
+    (`AddressFields.jsx`, `StepIdentitas.jsx` — dulu nulis `w-full rounded-xl
+    border-2 border-ink bg-white px-3 py-2 text-base focus:outline-none
+    focus-visible:outline-3`), search+select `StepItem.jsx`, textarea alasan
+    `Riwayat.jsx`.
+  - Build ulang `public/`.
+- **Kenapa**: Issue #3 — token dipakai tangan: `border-black` 46× vs
+  `border-ink`; input styling manual nulis ulang token yang sudah ada.
+  Sekarang satu sumber. **Catatan**: bikin komponen `<Input>` terpisah (usulan
+  issue) **tidak dilakukan** — utility class `.input-brutal` sudah cukup buat
+  seragam & menghindari abstraction layer baru tanpa kebutuhan nyata.
+  Perubahan focus ring wizard input mengikuti konsistensi 12 file lain yang
+  sudah pakai `.input-brutal`.
+- **Bukti**: grep `border-black` / `shadow-[3px` / styling manual → **0 sisa**;
+  `npm run build` sukses.
+- **File**: 17 JSX (lihat grep), `public/` (bundle rebuild), `ENGINEER.md`.
+
 ### FE polish: tabel → cards mobile semua daftar admin (batch 3b) — issue #3
 
 - **Apa**:

@@ -77,7 +77,7 @@ export default function Pricelist() {
             type="button"
             onClick={() => setKategori('')}
             className={
-              'rounded-xl border-2 border-black px-3 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_0_#000000] ' +
+              'rounded-xl border-2 border-ink px-3 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_0_#000000] ' +
               (kategori === '' ? 'bg-cta' : 'bg-white')
             }
           >
@@ -89,7 +89,7 @@ export default function Pricelist() {
               type="button"
               onClick={() => setKategori(k)}
               className={
-                'rounded-xl border-2 border-black px-3 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_0_#000000] ' +
+                'rounded-xl border-2 border-ink px-3 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_0_#000000] ' +
                 (kategori === k ? 'bg-cta' : 'bg-white')
               }
             >
@@ -116,7 +116,7 @@ export default function Pricelist() {
       {/* --- Tabel (desktop) --- */}
       <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full text-left text-sm">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               <th className="p-3 font-extrabold">Layanan</th>
               <th className="p-3 font-extrabold">Ukuran / Satuan</th>
@@ -148,7 +148,7 @@ export default function Pricelist() {
                     {r.size} <span className="text-gray-500">/ {r.unit}</span>
                   </td>
                   <td className="p-3">
-                    <span className="rounded-lg border-2 border-black bg-paper px-2 py-0.5 text-xs font-extrabold">
+                    <span className="rounded-lg border-2 border-ink bg-paper px-2 py-0.5 text-xs font-extrabold">
                       {r.category}
                     </span>
                   </td>
@@ -177,7 +177,7 @@ export default function Pricelist() {
                   <p className="text-xs text-gray-500">
                     {r.service} · {r.size} / {r.unit}
                   </p>
-                  <span className="mt-1 inline-block rounded-lg border-2 border-black bg-paper px-2 py-0.5 text-xs font-extrabold">
+                  <span className="mt-1 inline-block rounded-lg border-2 border-ink bg-paper px-2 py-0.5 text-xs font-extrabold">
                     {r.category}
                   </span>
                 </div>

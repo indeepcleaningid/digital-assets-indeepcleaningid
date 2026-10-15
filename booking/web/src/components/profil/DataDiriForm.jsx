@@ -60,7 +60,7 @@ export default function DataDiriForm({ user, onBerubah, onError, onSuccess }) {
             maxLength={100}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+            className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
           />
         </div>
         <div className="mb-4">
@@ -73,7 +73,7 @@ export default function DataDiriForm({ user, onBerubah, onError, onSuccess }) {
             required
             value={phonePrimary}
             onChange={(e) => setPhonePrimary(e.target.value)}
-            className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+            className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
             placeholder="081234567890"
           />
         </div>
@@ -86,7 +86,7 @@ export default function DataDiriForm({ user, onBerubah, onError, onSuccess }) {
             type="tel"
             value={phoneSecondary}
             onChange={(e) => setPhoneSecondary(e.target.value)}
-            className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+            className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
             placeholder="081234567890"
           />
         </div>
@@ -98,7 +98,7 @@ export default function DataDiriForm({ user, onBerubah, onError, onSuccess }) {
             id="preferensi"
             value={preferredTime}
             onChange={(e) => setPreferredTime(e.target.value)}
-            className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+            className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
           >
             <option value="">Belum memilih</option>
             <option value="09.00">09.00 (pagi)</option>

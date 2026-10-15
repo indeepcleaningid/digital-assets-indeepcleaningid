@@ -14,7 +14,7 @@ import { statusBadgeClass, statusLabel } from '../lib/format.js'
 export default function StatusBadge({ status, className = '' }) {
   return (
     <span
-      className={`inline-block rounded-lg border-2 border-black px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(status)} ${className}`}
+      className={`inline-block rounded-lg border-2 border-ink px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(status)} ${className}`}
     >
       {statusLabel(status)}
     </span>

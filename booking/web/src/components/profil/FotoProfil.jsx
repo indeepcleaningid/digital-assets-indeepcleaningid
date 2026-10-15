@@ -59,7 +59,7 @@ export default function FotoProfil({ user, onBerubah, onError, onSuccess }) {
     <section className="card mb-6 p-5">
       <h2 className="mb-3 text-lg font-extrabold">Foto Profil</h2>
       <div className="flex items-center gap-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-black bg-gray-100">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ink bg-gray-100">
           {fotoUrl ? (
             <img src={fotoUrl} alt="Foto profil" className="h-full w-full object-cover" />
           ) : (

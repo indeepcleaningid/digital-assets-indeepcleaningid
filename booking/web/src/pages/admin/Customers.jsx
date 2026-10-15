@@ -124,7 +124,7 @@ export default function AdminCustomers() {
 
       <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full text-left text-sm">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               <th className="p-3 font-extrabold">Nama</th>
               <th className="p-3 font-extrabold">Kontak</th>
@@ -154,14 +154,14 @@ export default function AdminCustomers() {
                     <div className="flex gap-1">
                       <button
                         type="button"
-                        className="rounded-lg border-2 border-black bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
+                        className="rounded-lg border-2 border-ink bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
                         onClick={() => setEdit({ id: c.id, name: c.name || '', phone_primary: c.phone_primary || '', phone_secondary: '', preferred_time: '' })}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg border-2 border-black bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
+                        className="rounded-lg border-2 border-ink bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
                         onClick={() => setHapus(c)}
                       >
                         Hapus
@@ -192,14 +192,14 @@ export default function AdminCustomers() {
                 <div className="flex shrink-0 gap-1">
                   <button
                     type="button"
-                    className="rounded-lg border-2 border-black bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
+                    className="rounded-lg border-2 border-ink bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
                     onClick={() => setEdit({ id: c.id, name: c.name || '', phone_primary: c.phone_primary || '', phone_secondary: '', preferred_time: '' })}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border-2 border-black bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
+                    className="rounded-lg border-2 border-ink bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
                     onClick={() => setHapus(c)}
                   >
                     Hapus
