@@ -6,12 +6,14 @@
  *
  * Syarat: booking milik sendiri, status pending atau confirmed,
  * dan masih sebelum hari jadwal (H-1 atau lebih awal).
- * Slot otomatis dibebaskan (booked - 1 atomik dalam transaksi).
+ * Slot otomatis dibebaskan lewat recount counter dari tabel bookings,
+ * semuanya dalam satu transaksi (issue #11).
  */
 
 require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/session.php';
 require __DIR__ . '/../../app/lib/audit.php';
+require __DIR__ . '/../../app/lib/slots.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
@@ -69,17 +71,14 @@ try {
         json_error(400, 'terlambat_batal', 'Pembatalan hanya bisa dilakukan sebelum hari jadwal ya.');
     }
 
-    // Bebaskan slot atomik
-    $pdo->prepare(
-        // IF, bukan GREATEST(booked-1, 0): aritmetika UNSIGNED meledak di
-        // 0-1 sebelum GREATEST sempat clamp (underflow 1690, issue #17)
-        'UPDATE slots SET booked = IF(booked > 0, booked - 1, 0) WHERE slot_date = ? AND slot_time = ?'
-    )->execute([$booking['slot_date'], $booking['slot_time']]);
-
     // Update booking: cancelled + alasan + version naik
     $pdo->prepare(
         'UPDATE bookings SET status = "cancelled", cancel_reason = ?, version = version + 1 WHERE id = ?'
     )->execute([$reason, $id]);
+
+    // Satu strategi counter (issue #11): recount dari source of truth (bookings),
+    // bukan decrement manual yang bisa drift / underflow.
+    slot_recount($pdo, (string) $booking['slot_date'], (string) $booking['slot_time']);
 
     audit_log(
         (int) $user['id'], (string) $user['role'], 'booking_cancel',

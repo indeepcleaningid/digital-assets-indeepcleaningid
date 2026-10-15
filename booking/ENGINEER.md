@@ -10,6 +10,39 @@
 
 ## 2026-10-15
 
+### Slot counter: satu strategi recount + semua write dalam transaksi — issue #11
+
+- **Apa**: `slots.booked` sekarang **selalu** dihitung ulang dari tabel `bookings`
+  lewat `slot_recount()` setelah tiap perubahan booking — tidak ada lagi
+  aritmetika manual `booked ± 1`. Yang dibungkus transaksi + kunci baris:
+  `bookings-create.php` (ensure → `SELECT … FOR UPDATE` → recount → insert →
+  recount), `bookings-cancel.php`, `admin/bookings.php` (ubah status **dan**
+  pindah jadwal), `scripts/expire-bookings.php`, plus PATCH & DELETE
+  `admin/slots.php` (dulu cek-lalu-aksi tanpa lock). `scripts/uji-admin-helper.php`
+  action `hapus-booking` ikut recount biar counter tak orphan antar-run.
+  `scripts/uji-tahap2.mjs` S7b kini meng-assert counter (`booked === 1`).
+- **Kenapa**: Issue #11 — counter di-update **dua strategi** (recount agregat vs
+  decrement manual tersebar), ada update booking+slot yang jalan **tanpa
+  transaksi**, dan hapus slot `cek-lalu-DELETE` tanpa lock (ghost count saat
+  race). PRD 11.5 mewajibkan semua perubahan slot dalam transaksi.
+- **Bonus penting — menutup regresi dari #12**: `slot_ensure()` diubah dari
+  `INSERT IGNORE` → `INSERT … ON DUPLICATE KEY UPDATE id = id`. Sebab: pada baris
+  slot yang **sudah ada**, `INSERT IGNORE` mengambil **shared lock**, yang lalu
+  di-upgrade ke **exclusive** oleh `SELECT … FOR UPDATE` berikutnya → dua request
+  bersamaan bisa **deadlock** (jalur umum di produksi: baris slot biasanya sudah
+  dibuat kalender admin). ODKU langsung exclusive → terserialisasi rapi.
+- **Bukti**: (a) Balapan slot 3 kondisi via `uji-race-tahap2.php` — baris kosong,
+  baris ada (booked 0), baris penuh — semua **tanpa deadlock** (`MENANG|DITOLAK`
+  lalu `DITOLAK|DITOLAK`). (b) Suite Tahap 2 **15/16** (S2 surcharge gagal
+  pre-existing = #6). (c) Suite Admin Tahap 4 **33/33**. (d) Invarian
+  `slots.booked == COUNT(bookings yang menghitung)` **bersih di seluruh slot**
+  setelah operasi (satu-satunya sisa: orphan dari race-simulator yang memang
+  tidak membuat baris booking — artefak #38; hilang setelah recount).
+- **File**: `app/lib/slots.php`, `public/api/bookings-create.php`,
+  `public/api/bookings-cancel.php`, `public/api/admin/bookings.php`,
+  `public/api/admin/slots.php`, `scripts/expire-bookings.php`,
+  `scripts/uji-admin-helper.php`, `scripts/uji-tahap2.mjs`, `ENGINEER.md`.
+
 ### Slot: satu helper ensure + GET publik berhenti menulis DB — issue #12
 
 - **Apa**: `app/lib/slots.php` dapat helper baru `slot_times()`, `slot_ensure()`

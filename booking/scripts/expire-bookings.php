@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../app/lib/bootstrap.php';
 require __DIR__ . '/../app/lib/audit.php';
+require __DIR__ . '/../app/lib/slots.php';
 
 // Amankan: hanya boleh jalan dari CLI
 if (PHP_SAPI !== 'cli') {
@@ -53,12 +54,9 @@ foreach ($rows as $b) {
         );
         $upd->execute([(int) $b['id']]);
         if ($upd->rowCount() > 0) {
-            // Buka lagi slotnya — IF, bukan GREATEST(booked-1, 0): aritmetika
-            // UNSIGNED meledak di 0-1 sebelum GREATEST sempat clamp (issue #17)
-            $pdo->prepare(
-                'UPDATE slots SET booked = IF(booked > 0, booked - 1, 0)
-                 WHERE slot_date = ? AND slot_time = ?'
-            )->execute([$b['slot_date'], $b['slot_time']]);
+            // Satu strategi counter (issue #11): recount dari source of truth
+            // (bookings), bukan decrement manual booked-1.
+            slot_recount($pdo, (string) $b['slot_date'], (string) $b['slot_time']);
 
             audit_log(0, 'system', 'booking_status', (int) $b['id'], 'pending', 'expired',
                 'Otomatis kedaluwarsa: slot sudah lewat tanpa konfirmasi (cron)');

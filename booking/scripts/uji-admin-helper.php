@@ -14,6 +14,7 @@
  */
 
 require __DIR__ . '/../app/lib/bootstrap.php';
+require __DIR__ . '/../app/lib/slots.php';
 
 $action = $argv[1] ?? '';
 $pdo = db();
@@ -53,7 +54,16 @@ switch ($action) {
         break;
 
     case 'hapus-booking':
-        $pdo->prepare('DELETE FROM bookings WHERE id = ?')->execute([(int) $argv[2]]);
+        // Recount slot setelah hapus (issue #11): production hard delete sudah
+        // recount, helper uji ikut supaya counter tidak orphan antar-run.
+        $bid = (int) $argv[2];
+        $st = $pdo->prepare('SELECT slot_date, slot_time FROM bookings WHERE id = ?');
+        $st->execute([$bid]);
+        $b = $st->fetch();
+        $pdo->prepare('DELETE FROM bookings WHERE id = ?')->execute([$bid]);
+        if ($b) {
+            slot_recount($pdo, (string) $b['slot_date'], (string) $b['slot_time']);
+        }
         echo "ok\n";
         break;
 

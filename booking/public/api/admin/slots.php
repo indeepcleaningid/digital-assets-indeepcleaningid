@@ -83,20 +83,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         json_error(400, 'bad_request', 'Slot mana yang mau dihapus ya?');
     }
 
-    $row = $pdo->prepare('SELECT id, slot_date, slot_time, booked FROM slots WHERE id = ?');
-    $row->execute([$id]);
-    $cur = $row->fetch();
-    if (!$cur) {
-        json_error(404, 'not_found', 'Slot tidak ditemukan ya.');
-    }
-    if ((int) $cur['booked'] > 0) {
-        json_error(400, 'slot_not_empty', "Slot {$cur['slot_date']} {$cur['slot_time']} masih ada {$cur['booked']} booking. Pindahkan atau batalkan booking dulu ya.");
-    }
+    // Kunci baris dulu (issue #11: dulu cek-lalu-DELETE tanpa lock → race bisa
+    // menghapus slot yang barusan terisi). Recount biar cek "kosong" pakai
+    // angka jujur dari tabel bookings.
+    $pdo->beginTransaction();
+    try {
+        $row = $pdo->prepare('SELECT id, slot_date, slot_time, booked FROM slots WHERE id = ? FOR UPDATE');
+        $row->execute([$id]);
+        $cur = $row->fetch();
+        if (!$cur) {
+            $pdo->rollBack();
+            json_error(404, 'not_found', 'Slot tidak ditemukan ya.');
+        }
 
-    $pdo->prepare('DELETE FROM slots WHERE id = ?')->execute([$id]);
+        slot_recount($pdo, (string) $cur['slot_date'], (string) $cur['slot_time']);
+        $row->execute([$id]);
+        $cur = $row->fetch();
 
-    audit_log((int) $user['id'], $user['role'], 'slot_delete', null, null, null,
-        "Slot {$cur['slot_date']} {$cur['slot_time']} (kosong) dihapus oleh superadmin");
+        if ((int) $cur['booked'] > 0) {
+            $pdo->rollBack();
+            json_error(400, 'slot_not_empty', "Slot {$cur['slot_date']} {$cur['slot_time']} masih ada {$cur['booked']} booking. Pindahkan atau batalkan booking dulu ya.");
+        }
+
+        $pdo->prepare('DELETE FROM slots WHERE id = ?')->execute([$id]);
+
+        audit_log((int) $user['id'], $user['role'], 'slot_delete', null, null, null,
+            "Slot {$cur['slot_date']} {$cur['slot_time']} (kosong) dihapus oleh superadmin");
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 
     json_response(['data' => ['ok' => true, 'id' => $id]]);
 }
@@ -114,48 +133,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
         json_error(400, 'bad_request', 'Slot mana yang mau diubah ya?');
     }
 
-    $row = $pdo->prepare('SELECT id, slot_date, slot_time, capacity, booked, is_locked FROM slots WHERE id = ?');
-    $row->execute([$id]);
-    $cur = $row->fetch();
-    if (!$cur) {
-        json_error(404, 'not_found', 'Slot tidak ditemukan ya.');
-    }
-
-    $sets = [];
-    $params = [];
-    $logParts = [];
-
-    if (array_key_exists('is_locked', $body) && $body['is_locked'] !== null) {
-        $lock = $body['is_locked'] ? 1 : 0;
-        $sets[] = 'is_locked = ?';
-        $params[] = $lock;
-        $logParts[] = $lock ? 'dikunci' : 'dibuka';
-    }
-    if (array_key_exists('capacity', $body) && $body['capacity'] !== null) {
-        $cap = (int) $body['capacity'];
-        if ($cap < 1) {
-            json_error(400, 'capacity_invalid', 'Kapasitas minimal 1 ya.');
+    // Semua perubahan slot dalam transaksi + kunci baris (PRD 11.5, issue #11).
+    $pdo->beginTransaction();
+    try {
+        $row = $pdo->prepare('SELECT id, slot_date, slot_time, capacity, booked, is_locked FROM slots WHERE id = ? FOR UPDATE');
+        $row->execute([$id]);
+        $cur = $row->fetch();
+        if (!$cur) {
+            $pdo->rollBack();
+            json_error(404, 'not_found', 'Slot tidak ditemukan ya.');
         }
-        if ($cap < (int) $cur['booked']) {
-            json_error(400, 'capacity_invalid', "Kapasitas tidak boleh kurang dari jumlah yang sudah booked ({$cur['booked']}) ya.");
+
+        // Recount dulu: validasi kapasitas >= booked pakai angka jujur
+        slot_recount($pdo, (string) $cur['slot_date'], (string) $cur['slot_time']);
+        $row->execute([$id]);
+        $cur = $row->fetch();
+
+        $sets = [];
+        $params = [];
+        $logParts = [];
+
+        if (array_key_exists('is_locked', $body) && $body['is_locked'] !== null) {
+            $lock = $body['is_locked'] ? 1 : 0;
+            $sets[] = 'is_locked = ?';
+            $params[] = $lock;
+            $logParts[] = $lock ? 'dikunci' : 'dibuka';
         }
-        $sets[] = 'capacity = ?';
-        $params[] = $cap;
-        $logParts[] = "kapasitas {$cur['capacity']}->$cap";
+        if (array_key_exists('capacity', $body) && $body['capacity'] !== null) {
+            $cap = (int) $body['capacity'];
+            if ($cap < 1) {
+                $pdo->rollBack();
+                json_error(400, 'capacity_invalid', 'Kapasitas minimal 1 ya.');
+            }
+            if ($cap < (int) $cur['booked']) {
+                $pdo->rollBack();
+                json_error(400, 'capacity_invalid', "Kapasitas tidak boleh kurang dari jumlah yang sudah booked ({$cur['booked']}) ya.");
+            }
+            $sets[] = 'capacity = ?';
+            $params[] = $cap;
+            $logParts[] = "kapasitas {$cur['capacity']}->$cap";
+        }
+
+        if ($sets === []) {
+            $pdo->rollBack();
+            json_error(400, 'bad_request', 'Tidak ada perubahan yang dikirim ya.');
+        }
+
+        $params[] = $id;
+        $pdo->prepare('UPDATE slots SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
+
+        audit_log((int) $user['id'], $user['role'], 'slot_update', null, null, null,
+            "Slot {$cur['slot_date']} {$cur['slot_time']}: " . implode(', ', $logParts));
+
+        $row->execute([$id]);
+        $fresh = $row->fetch();
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
 
-    if ($sets === []) {
-        json_error(400, 'bad_request', 'Tidak ada perubahan yang dikirim ya.');
-    }
-
-    $params[] = $id;
-    $pdo->prepare('UPDATE slots SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
-
-    audit_log((int) $user['id'], $user['role'], 'slot_update', null, null, null,
-        "Slot {$cur['slot_date']} {$cur['slot_time']}: " . implode(', ', $logParts));
-
-    $row->execute([$id]);
-    $fresh = $row->fetch();
     $fresh['id'] = (int) $fresh['id'];
     $fresh['capacity'] = (int) $fresh['capacity'];
     $fresh['booked'] = (int) $fresh['booked'];

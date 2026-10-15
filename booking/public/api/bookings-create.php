@@ -194,16 +194,18 @@ try {
     $slotStmt->execute([$dateRaw, $timeRaw]);
     $slot = $slotStmt->fetch();
 
+    // Satu strategi counter (issue #11): booked = recount dari tabel bookings,
+    // bukan aritmetika manual. Recount dulu supaya cek kapasitas pakai angka jujur.
+    slot_recount($pdo, $dateRaw, $timeRaw);
+    $slotStmt->execute([$dateRaw, $timeRaw]);
+    $slot = $slotStmt->fetch();
+
     if ((int) $slot['is_locked'] === 1) {
         throw new RuntimeException('slot_locked');
     }
     if ((int) $slot['booked'] >= (int) $slot['capacity']) {
         throw new RuntimeException('slot_full');
     }
-
-    // Naikkan booked atomik
-    $pdo->prepare('UPDATE slots SET booked = booked + 1 WHERE id = ?')
-        ->execute([(int) $slot['id']]);
 
     // Kode booking: IDP-YYYYMMDD-NNNN (nomor urut per tanggal jadwal)
     $slotDateCompact = str_replace('-', '', $dateRaw);
@@ -248,6 +250,9 @@ try {
     }
 
     $bookingId = (int) $pdo->lastInsertId();
+
+    // Recount setelah booking masuk — source of truth counter (issue #11)
+    slot_recount($pdo, $dateRaw, $timeRaw);
 
     // Items + surcharges (snapshot harga untuk riwayat jujur)
     $insItem = $pdo->prepare(
