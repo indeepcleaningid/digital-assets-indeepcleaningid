@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### README disinkronkan dengan realita produksi (subdomain, Google aktif, CI mati, build base '/') — PR ini
+### README disinkronkan dengan realita produksi (subdomain, Google aktif, CI mati, build base '/') — PR #34 (PR ini)
 
 - **Apa**: `README.md` diperbaiki di titik-titik yang sudah tidak sesuai kondisi
   nyata: (1) repo yang benar `digital-assets-indeepcleaningid` (badge CI &
