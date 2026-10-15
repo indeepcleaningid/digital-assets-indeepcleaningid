@@ -87,7 +87,12 @@ async function main() {
     process.exit(1)
   }
 
-  helper('reset-security-state')
+  // Reset state uji terpusat (issue #38) — idempoten antar-run
+  try {
+    execFileSync('docker', ['compose', 'exec', '-T', 'php', 'php', 'scripts/reset-uji.php'], { cwd: process.cwd(), stdio: 'ignore' })
+  } catch {
+    console.warn('⚠️  reset-uji gagal (lanjut, state mungkin kotor)')
+  }
 
   // ---------- Setup dua customer ----------
   const A = session()

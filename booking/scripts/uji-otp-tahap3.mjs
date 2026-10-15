@@ -303,6 +303,14 @@ async function main() {
   console.log('=== 10 Uji OTP — Penutupan Tahap 3 ===')
   console.log(`Backend: ${BASE}`)
 
+  // Reset state uji terpusat (issue #38) — OTP/cooldown/rate limit/data uji.
+  // Membuat suite idempoten antar-run (dulu sering gagal karena cooldown sisa).
+  try {
+    execSync('docker compose exec -T php php /app/scripts/reset-uji.php', { cwd: ROOT, stdio: 'ignore' })
+  } catch {
+    console.warn('⚠️  reset-uji gagal (lanjut, state mungkin kotor)')
+  }
+
   await uji1_gantiPasswordKodeBenar()
   await uji2_gantiPasswordKodeSalah()
   await uji3_kunci15Menit()

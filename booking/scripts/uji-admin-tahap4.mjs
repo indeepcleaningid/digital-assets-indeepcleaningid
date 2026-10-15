@@ -426,8 +426,9 @@ async function main() {
   console.log('=== Uji Menyeluruh Admin — Penutupan Tahap 4 ===')
   console.log(`Backend: ${BASE}`)
 
-  // Bersihkan percobaan login lama biar rate limit 5/10 menit gak mengganggu
-  helper('clear-login-attempts')
+  // Reset state uji terpusat (issue #38) — login_attempts, rate limit, slots,
+  // data uji. Membuat suite idempoten antar-run.
+  try { helper('reset-state-uji') } catch { try { execSync('docker compose exec -T php php /app/scripts/reset-uji.php', { cwd: process.cwd(), stdio: 'ignore' }) } catch { console.warn('⚠️  reset-uji gagal (lanjut)') } }
 
   await uji1_guardCustomer403()
   await uji2_adminBiasaVsSuperadmin()
