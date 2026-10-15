@@ -183,21 +183,16 @@ $userId = (int) $user['id'];
 $pdo->beginTransaction();
 
 try {
-    // Kunci baris slot (kalau belum ada, bikin dulu)
+    // Pastikan baris slot ada (idempoten, kapasitas dari config), lalu kunci
+    // barisnya. INSERT IGNORE + SELECT … FOR UPDATE: yang kalah balapan melihat
+    // booked terbaru → slot_penuh (PRD Bab 11).
+    slot_ensure($pdo, $dateRaw, $timeRaw, $capacityDefault);
+
     $slotStmt = $pdo->prepare(
         'SELECT id, capacity, booked, is_locked FROM slots WHERE slot_date = ? AND slot_time = ? FOR UPDATE'
     );
     $slotStmt->execute([$dateRaw, $timeRaw]);
     $slot = $slotStmt->fetch();
-
-    if (!$slot) {
-        $pdo->prepare(
-            'INSERT INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, ?, 0)'
-        )->execute([$dateRaw, $timeRaw, $capacityDefault]);
-
-        $slotStmt->execute([$dateRaw, $timeRaw]);
-        $slot = $slotStmt->fetch();
-    }
 
     if ((int) $slot['is_locked'] === 1) {
         throw new RuntimeException('slot_locked');

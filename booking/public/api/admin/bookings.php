@@ -122,9 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
 
         $pdo->beginTransaction();
         try {
-            // Slot baru: pastikan ada, tidak locked, ada kapasitas
-            $ins = $pdo->prepare('INSERT IGNORE INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, 1, 0)');
-            $ins->execute([$newDate, $newTime]);
+            // Slot baru: pastikan ada (kapasitas dari config), tidak locked, ada kapasitas
+            slot_ensure($pdo, $newDate, $newTime);
 
             $st = $pdo->prepare('SELECT id, capacity, booked, is_locked FROM slots WHERE slot_date = ? AND slot_time = ? FOR UPDATE');
             $st->execute([$newDate, $newTime]);
