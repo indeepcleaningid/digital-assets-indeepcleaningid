@@ -8,7 +8,32 @@
 
 ---
 
-## 2026-10-15
+## 2026-10-16
+
+### Security: blokir ekstensi sensitif (.md/.sql/.log/.db/.env/dst) di .htaccess — issue #1
+
+- **Apa**:
+  - Tambah `RewriteRule \.(md|sql|db|log|env|bak|old|swp)$ - [F,L]` di
+    `booking/.htaccess` (blokir any request ke file berekstensi sensitif,
+    kembalikan 403).
+  - Proteksi **belt-and-suspenders** selain `FilesMatch` yang sudah ada di
+    `public/.htaccess`.
+- **Kenapa**: Issue #1 — pentest black-box menemukan file root repo
+  (`README.md`, `ENGINEER.md`, `CONTRIBUTING.md`, dst.) kebaca 200 OK di
+  production karena deploy pernah mengunggah lebih dari `public/`; `FilesMatch`
+  ekstensi gak nendang di Hostinger (LiteSpeed/CDN), tapi `mod_rewrite`
+  **kebukti jalan** (folder `app/ config/ scripts/` → 403). Rule ini nyambung
+  ke fakta auto-deploy Hostinger bersifat *additive* (file lama nggak kehapus),
+  jadi kalau ada file sensitif berekstensi `.sql`/`.log`/`.db` yang tak sengaja
+  ter-upload, ia gak akan kebaca.
+- **Catatan**: Bagian lain issue #1 (auto-deploy additive di hPanel; setelan
+  *clean deploy*) **belum** dikerjakan — butuh akses hPanel manual, di luar
+  repo. Diverifikasi nanti.
+- **Bukti**: `curl` ke `https://booking.indeepcleaningid.site/README.md`
+  (subdomain tempat `.htaccess` ini hidup) harus balas **403/404**, bukan 200 —
+  dicek manual setelah auto-deploy. Path lama `/app-booking/` sudah 404 permanen
+  jadi bukan target valid.
+- **File**: `booking/.htaccess`, `ENGINEER.md`.
 
 ### Test infra: suite idempoten (reset state terpusat) — issue #38
 
