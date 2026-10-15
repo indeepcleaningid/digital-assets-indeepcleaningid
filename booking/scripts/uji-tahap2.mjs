@@ -106,6 +106,14 @@ async function main() {
     process.exit(1)
   }
 
+  // Reset state uji (issue #38) — biar suite idempoten antar-run
+  try {
+    const { execSync } = await import('node:child_process')
+    execSync('docker compose exec -T php php /app/scripts/reset-uji.php', { cwd: process.cwd(), stdio: 'ignore' })
+  } catch {
+    console.warn('⚠️  reset-uji gagal (lanjut, state mungkin kotor)')
+  }
+
   // Setup: login customer uji + profil lengkap
   const login = await req('/login-dev.php', { method: 'POST', body: { email: EMAIL, name: 'Uji Tahap 2' } })
   if (login.status !== 200) {

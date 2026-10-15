@@ -277,18 +277,25 @@ masih dijalankan manual; lihat [Deployment dan CI/CD](#deployment-dan-cicd).)
 | OTP (21 cek) | `node scripts/uji-otp-tahap3.mjs` | request/verify/cooldown/lockout OTP buat ganti password & ganti email |
 | Admin API (33 cek) | `node scripts/uji-admin-tahap4.mjs` | login admin, rate limit, dashboard, guard CRUD, pindah jadwal (aturan Selasa/lewat/H+30) |
 | Tahap 2 (16 cek / 9 skenario) | `node scripts/uji-tahap2.mjs` | subtotal, surcharge, minimum order, aturan hari/jam, balapan slot, double-submit, kontrak alamat |
+| Keamanan (23 cek) | `node scripts/uji-security-tahap29.mjs` | attempt cap OTP, IDOR horizontal/vertical, mass assignment, idempotency lintas user |
 | Balapan slot (helper) | `php scripts/uji-race-tahap2.php <YYYY-MM-DD> <A\|B>` | dipanggil suite Tahap 2 skenario 7 — 1 menang, 1 ditolak |
 
 > Diketahui: skenario 2 di Tahap 2 (surcharge latex + sofa lebar) **gagal
 > pre-existing** — validasi `surcharge_qty_mismatch` menolak payload uji lama.
-> Bukan regresi; nyangkut issue #6.
+> Bukan regresi.
 
-Persiapan umum sebelum run ulang (state yang numpuk antar run):
+### Reset state uji (idempoten antar-run)
 
-```sql
--- di MySQL/MariaDB
-DELETE FROM otps;            # reset cooldown OTP
-TRUNCATE login_attempts;     # reset rate limit login
+Tiap suite `.mjs` sekarang **mereset state di awal** lewat `scripts/reset-uji.php`
+(issue #38), jadi bisa dijalankan beruntun tanpa gagal palsu. Reset membersihkan:
+`otps`, `login_attempts`, `api_rate_limits`, `slots`, dan data ber-email `*@test.dev`
+(booking + items + surcharges + alamat + user). **Tidak** menyentuh pricelist,
+surcharges, atau user asli.
+
+Manual bila perlu:
+
+```bash
+docker compose exec -T php php /app/scripts/reset-uji.php
 ```
 
 Alur UI diverifikasi pakai headless Chrome lewat DevTools protocol

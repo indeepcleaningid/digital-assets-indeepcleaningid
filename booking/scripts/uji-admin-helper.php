@@ -115,6 +115,11 @@ switch ($action) {
         echo "ok\n";
         break;
 
+    case 'reset-state-uji':
+        // Teruskan ke reset terpusat (issue #38)
+        require __DIR__ . '/reset-uji.php';
+        break;
+
     default:
         fwrite(STDERR, "aksi tidak dikenal: $action\n");
         exit(1);

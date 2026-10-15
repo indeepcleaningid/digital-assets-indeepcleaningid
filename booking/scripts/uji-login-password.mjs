@@ -59,11 +59,18 @@ function cek(label, kondisi, ket) {
 }
 
 // --- Persiapan: customer dengan password, customer tanpa password, reset rate limit ---
+// Reset state uji terpusat dulu (issue #38) — hapus rate limit + data @test.dev
+// lama, baru seed lagi. Membuat suite idempoten antar-run.
+try {
+  execSync('docker compose exec -T php php /app/scripts/reset-uji.php', { cwd: ROOT, stdio: 'ignore' })
+} catch {
+  console.warn('⚠️  reset-uji gagal (lanjut, state mungkin kotor)')
+}
+
 helper('seed-customer', EMAIL, 'Customer+Uji+Login')
 helper('set-password', EMAIL, PASSWORD)
 helper('seed-customer', EMAIL_GOOGLE, 'Customer+Google')
 helper('clear-password', EMAIL_GOOGLE)
-helper('clear-attempts')
 
 console.log('=== UJI LOGIN EMAIL + PASSWORD (issue #30) ===')
 console.log(`API: ${BASE}`)

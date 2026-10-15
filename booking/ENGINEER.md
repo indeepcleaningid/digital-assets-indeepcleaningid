@@ -10,6 +10,31 @@
 
 ## 2026-10-15
 
+### Test infra: suite idempoten (reset state terpusat) — issue #38
+
+- **Apa**:
+  - `scripts/reset-uji.php` (baru) — reset state uji terpusat & idempoten:
+    `otps`, `login_attempts`, `api_rate_limits`, `slots`, dan data ber-email
+    `*@test.dev` (booking + items + surcharges + alamat + user). Tidak menyentuh
+    pricelist/surcharges/user asli.
+  - Tiap suite `.mjs` (`uji-tahap2`, `uji-otp-tahap3`, `uji-admin-tahap4`,
+    `uji-login-password`, `uji-security-tahap29`) memanggil reset di **awal** →
+    bisa dijalankan beruntun tanpa gagal palsu.
+  - Action `reset-state-uji` di `uji-admin-helper.php` (delegasi) +
+    dokumentasi di README bagian Pengujian.
+- **Kenapa**: Issue #38 — suite meninggalkan state (rate limit, cooldown OTP,
+  counter slot, booking/user sisa) → run berikutnya gagal palsu; dulu butuh
+  reset manual tak terdokumentasi, dan saat validasi PR sering salah baca
+  sebagai regresi.
+- **Bukti**: run **beruntun tanpa reset manual** — OTP **21/21** dua kali,
+  Admin **33/33** dua kali, Security **23/23**, login **19/19**, Tahap 2
+  **18/19** konsisten (hanya S2 pre-existing). Sebelum ini, run beruntun OTP
+  gagal karena cooldown/rate limit sisa.
+- **File**: `scripts/reset-uji.php` (baru), `scripts/uji-tahap2.mjs`,
+  `scripts/uji-otp-tahap3.mjs`, `scripts/uji-admin-tahap4.mjs`,
+  `scripts/uji-login-password.mjs`, `scripts/uji-security-tahap29.mjs`,
+  `scripts/uji-admin-helper.php`, `README.md`, `ENGINEER.md`.
+
 ### Polish backend (Batch 2, penutup): N+1, index audit_logs, DRY read_json_body — issue #4
 
 - **Apa**:
