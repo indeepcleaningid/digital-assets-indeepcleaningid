@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 
 /**
  * Login customer (PRD Bab 10.1):
  * - Pintu utama Google OAuth (klik -> /api/google-login.php -> Google -> callback).
- * - Fallback login email dev biar alur bisa dites lokal.
+ * - Pintu kedua: email + password manual (issue #30) — buat customer yang
+ *   sudah menyetel password lewat alur "Lupa password" (OTP).
  */
 export default function Login() {
   const { user, refresh } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -48,9 +50,9 @@ export default function Login() {
     setBusy(true)
 
     try {
-      await api('/login-dev.php', {
+      await api('/login.php', {
         method: 'POST',
-        body: JSON.stringify({ email, name }),
+        body: JSON.stringify({ email, password }),
       })
       await refresh()
       // refresh akan memicu useEffect di atas buat arahkan
@@ -107,21 +109,27 @@ export default function Login() {
             />
           </div>
 
-          <div className="mb-5">
-            <label htmlFor="name" className="mb-1 block text-sm font-bold">
-              Nama lengkap <span className="font-normal text-gray-500">(opsional)</span>
+          <div className="mb-3">
+            <label htmlFor="password" className="mb-1 block text-sm font-bold">
+              Password
             </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
-              placeholder="Budi Santoso"
+            <PasswordInput
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password kamu"
             />
           </div>
+
+          <p className="mb-5 text-right text-sm text-gray-600">
+            Lupa password?{' '}
+            <Link to="/lupa-password" className="font-bold text-brand underline">
+              Reset di sini
+            </Link>
+          </p>
 
           {error ? (
             <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
@@ -137,13 +145,6 @@ export default function Login() {
             {busy ? 'Memeriksa…' : 'Masuk'}
           </button>
         </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Lupa password?{' '}
-          <Link to="/lupa-password" className="font-bold text-brand underline">
-            Reset di sini
-          </Link>
-        </p>
       </section>
     </main>
   )
