@@ -15,6 +15,11 @@ RewriteRule ^(\.env.*|\.gitignore|\.dockerignore|Dockerfile|docker-compose\.yml|
 # Ini proteksi dobel buat file *.md/*.sql/*.log/*.db/*.env/*.bak/*.old/*.swp yang
 # tak sengaja ter-upload (mis. seluruh repo lewat File Manager) — minta 403.
 RewriteRule \.(md|sql|db|log|env|bak|old|swp)$ - [F,L]
+# Nama file repo tanpa ekstensi — follow-up issue #1. Rule ekstensi di atas
+# lolos buat LICENSE/README/SECURITY tanpa .md (kebukti masih 200 OK pas
+# validasi PR #60). Anchoring ^...$ biar cuma kena nama file exact, bukan
+# jalur API/upload (gak ada route /LICENSE, /Dockerfile, dsb. di app ini).
+RewriteRule ^(LICENSE|README|SECURITY|NOTICE|CHANGELOG|Makefile|Dockerfile)(\.(md|txt))?$ - [F,L,NC]
 # Pintu seed pernah di-commit di root sekali buat auto-deploy — diblokir permanen
 # biar kalau ada yang upload ulang lewat File Manager, gak bisa dijalanin sembarangan.
 RewriteRule ^seed-web\.php$ - [F,L]
