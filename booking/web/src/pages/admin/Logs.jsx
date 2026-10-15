@@ -80,7 +80,7 @@ export default function AdminLogs() {
         <Banner variant="error" className="mb-3">{error}</Banner>
       ) : null}
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b-2 border-black bg-paper">
             <tr>
@@ -117,6 +117,31 @@ export default function AdminLogs() {
           </tbody>
         </table>
       </div>
+
+      {/* Cards mobile (di bawah lg) */}
+      <ul className="space-y-3 lg:hidden">
+        {loading ? (
+          <li className="card p-4 text-center text-gray-500">Memuat…</li>
+        ) : rows.length === 0 ? (
+          <li className="card p-4 text-center text-gray-500">Tidak ada log.</li>
+        ) : rows.map((l) => (
+          <li key={l.id} className="card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-bold">{aksiLabel(l.action)}</p>
+              <span className="shrink-0 text-xs text-gray-500">{l.created_at}</span>
+            </div>
+            <p className="mt-1 text-sm">
+              {l.actor_id ? `#${l.actor_id}` : '—'}
+              <span className="ml-1 rounded border border-black px-1 text-xs">{l.actor_role}</span>
+              {l.booking_id ? <span className="ml-2">Booking #{l.booking_id}</span> : null}
+            </p>
+            {l.from_status || l.to_status ? (
+              <p className="mt-1 text-sm text-gray-600">{l.from_status || '—'} → {l.to_status || '—'}</p>
+            ) : null}
+            {l.reason ? <p className="mt-1 text-xs text-gray-600">{l.reason}</p> : null}
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-sm text-gray-600">Total {total} log · Halaman {page}/{totalPages}</p>

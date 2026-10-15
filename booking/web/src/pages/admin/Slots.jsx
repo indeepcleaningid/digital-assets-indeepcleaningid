@@ -175,7 +175,8 @@ export default function AdminSlots() {
       {loading ? (
         <p className="text-gray-600">Memuat…</p>
       ) : (
-        <div className="card overflow-x-auto p-0">
+        <>
+        <div className="card hidden overflow-x-auto p-0 lg:block">
           <table className="w-full text-sm">
             <thead className="border-b-2 border-black bg-paper">
               <tr>
@@ -226,6 +227,46 @@ export default function AdminSlots() {
             </tbody>
           </table>
         </div>
+
+        {/* Cards mobile — per tanggal, 2 tombol slot (pola sama daftar admin lain) */}
+        <ul className="space-y-3 lg:hidden">
+          {tanggalList.map((tgl) => {
+            const isSelasa = hariIndo(tgl) === 'Selasa'
+            return (
+              <li key={tgl} className="card p-4">
+                <p className="font-bold">{formatDate(tgl)}</p>
+                <p className="text-xs text-gray-500">{hariIndo(tgl)}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {['09.00', '13.00'].map((jam) => {
+                    if (isSelasa) {
+                      return (
+                        <span key={jam} className="rounded-lg border-2 border-black bg-white px-3 py-2 text-center text-xs font-bold text-gray-400">
+                          Libur (Selasa)
+                        </span>
+                      )
+                    }
+                    const s = perTanggal[tgl]?.[jam]
+                    if (!s) {
+                      return <span key={jam} className="px-3 py-2 text-center text-gray-400">—</span>
+                    }
+                    return (
+                      <button
+                        key={jam}
+                        type="button"
+                        onClick={() => bukaAksi(s)}
+                        className={`rounded-lg border-2 border-black px-3 py-2 text-left text-xs font-bold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px ${cellClass(s)}`}
+                      >
+                        <p>{formatSlotTime(jam)}</p>
+                        <p>{cellLabel(s)} · {s.booked}/{s.capacity}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+        </>
       )}
 
       {/* Panel aksi slot (berform: kapasitas + kunci) */}

@@ -104,31 +104,35 @@ export default function AdminReports() {
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="card p-4">
               <h3 className="mb-3 font-extrabold">Per Status</h3>
-              <table className="w-full text-left text-sm">
-                <thead className="border-b-2 border-black">
-                  <tr>
-                    <th className="p-2 font-bold">Status</th>
-                    <th className="p-2 font-bold">Jumlah</th>
-                    <th className="p-2 font-bold">Nilai</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.by_status.length === 0 ? (
-                    <tr><td colSpan={3} className="p-3 text-gray-500">Tidak ada data.</td></tr>
-                  ) : data.by_status.map((s) => (
-                    <tr key={s.status} className="border-b border-gray-200 last:border-0">
-                      <td className="p-2 font-bold">{statusLabel(s.status)}</td>
-                      <td className="p-2">{s.count}</td>
-                      <td className="p-2">{formatRupiah(s.omzet)}</td>
+              {/* overflow-x-auto — "Nilai" Rupiah panjang bisa luber di HP (issue #3) */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b-2 border-black">
+                    <tr>
+                      <th className="p-2 font-bold">Status</th>
+                      <th className="p-2 font-bold">Jumlah</th>
+                      <th className="p-2 font-bold">Nilai</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.by_status.length === 0 ? (
+                      <tr><td colSpan={3} className="p-3 text-gray-500">Tidak ada data.</td></tr>
+                    ) : data.by_status.map((s) => (
+                      <tr key={s.status} className="border-b border-gray-200 last:border-0">
+                        <td className="p-2 font-bold">{statusLabel(s.status)}</td>
+                        <td className="p-2">{s.count}</td>
+                        <td className="p-2">{formatRupiah(s.omzet)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="card p-4">
               <h3 className="mb-3 font-extrabold">Harian (Omzet)</h3>
-              <div className="max-h-80 overflow-y-auto">
+              {/* overflow-x+y-auto — daftar panjang scroll vertikal; kolom angka aman di HP */}
+              <div className="max-h-80 overflow-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 border-b-2 border-black bg-white">
                     <tr>

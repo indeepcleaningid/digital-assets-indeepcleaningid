@@ -10,6 +10,32 @@
 
 ## 2026-10-16
 
+### FE polish: tabel → cards mobile semua daftar admin (batch 3b) — issue #3
+
+- **Apa**:
+  - `admin/Reports.jsx` — bungkus 2 tabel (Per Status, Harian) dengan
+    `overflow-x-auto` — kolom "Nilai"/Rupiah panjang bisa luber di HP.
+  - `admin/Customers.jsx` — tabel dibuat desktop-only (`hidden lg:block`) +
+    cards mobile `lg:hidden` (nama, email, WA, alamat, booking, aksi edit/hapus).
+  - `admin/Logs.jsx` — pola sama: tabel desktop + cards (aksi, waktu UTC,
+    pelaku, booking, perubahan status, alasan).
+  - `admin/Slots.jsx` — kalender: tabel grid desktop + cards per tanggal
+    (2 tombol slot 09.00/13.00 dengan warna status yang sama).
+  - `admin/Pricelist.jsx` — tabel desktop + cards mobile **read-only** + tombol
+    Aktif/Nonaktif. **Edit detail (nama/harga/kategori) tetap via desktop** —
+    popover inline menempel di sel tabel, tidak dipindah ke cards (keputusan
+    sadar; HP untuk pantau + toggle).
+  - `admin/Bookings.jsx` — **tidak disentuh**: sudah punya pola
+    `isDesktop` + `BookingRow variant="table"|"card"` (hasil issue #7 batch 2).
+  - Build ulang `public/`.
+- **Kenapa**: Issue #3 — "Table→cards cuma 2 dari 8 daftar; Reports card bahkan
+  tanpa `overflow-x-auto` → luber di HP". Admin dicek dari HP pun sekarang
+  aman di semua halaman.
+- **Bukti**: `npm run build` sukses; pola mengikuti `Pricelist` customer
+  (`hidden lg:block` / `lg:hidden`) yang sudah ada sebelumnya.
+- **File**: `admin/{Reports,Customers,Logs,Slots,Pricelist}.jsx`, `public/`
+  (bundle rebuild), `ENGINEER.md`.
+
 ### FE polish: kategori booking di-derive dari pricelist API (batch 3a) — issue #3
 
 - **Apa**:
