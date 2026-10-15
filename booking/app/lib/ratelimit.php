@@ -56,11 +56,14 @@ function rate_limit(string $bucket, int $maxHits, int $windowSeconds, ?string $i
                 'UPDATE api_rate_limits SET hits = hits + 1 WHERE bucket = ? AND ip = ?'
             )->execute([$bucket, $ip]);
         } else {
+            // window_start ditulis dari PHP (bukan NOW() DB): dicek pakai
+            // time()/strtotime() PHP juga — jangan campur dua sumber (issue #18,
+            // pola sama dengan created_at di app/lib/otp.php).
             $pdo->prepare(
                 'INSERT INTO api_rate_limits (bucket, ip, hits, window_start)
-                 VALUES (?, ?, 1, NOW())
-                 ON DUPLICATE KEY UPDATE hits = 1, window_start = NOW()'
-            )->execute([$bucket, $ip]);
+                 VALUES (?, ?, 1, ?)
+                 ON DUPLICATE KEY UPDATE hits = 1, window_start = ?'
+            )->execute([$bucket, $ip, date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]);
         }
         $pdo->commit();
     } catch (Throwable $e) {

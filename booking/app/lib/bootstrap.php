@@ -6,6 +6,12 @@
 
 declare(strict_types=1);
 
+// WIB untuk SEMUA waktu PHP (PRD Bab 15) — produksi (Hostinger) tidak pernah
+// set date.timezone, jadi tanpa baris ini PHP default UTC dan "hari ini"
+// (dashboard), cutoff H-1 cancel, aturan Selasa, expiry OTP meleset 7 jam.
+// Dev Docker juga sudah set (Dockerfile), baris ini bikin konsisten di mana aja.
+date_default_timezone_set('Asia/Jakarta');
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/response.php';
 require_once __DIR__ . '/db.php';
