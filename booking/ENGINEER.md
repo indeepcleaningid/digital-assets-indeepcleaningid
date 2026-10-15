@@ -10,6 +10,31 @@
 
 ## 2026-10-15
 
+### Refactor FE (Batch 3, terakhir): pecah Profil.jsx — issue #7
+
+- **Apa**: `pages/Profil.jsx` (**766 baris**) dipecah jadi halaman tipis + 5
+  komponen di `components/profil/`:
+  - `FotoProfil.jsx` — upload/ganti/hapus foto, state upload lokal.
+  - `DataDiriForm.jsx` — form nama/WA/preferensi jam + PATCH `me.php`.
+  - `AlamatPanel.jsx` — panel alamat (dulu nested `useAuth()`; kini terima prop
+    `user` → mandiri). Pakai `AddressFields` dari Batch 1.
+  - `GantiPassword.jsx` — alur OTP ganti password.
+  - `GantiEmail.jsx` — alur dua OTP (email lama + baru).
+  - `Profil.jsx` tinggal: guard auth + header + banner error/success bersama +
+    menyusun 5 panel (banner dibagikan via prop `onError`/`onSuccess`).
+- **Kenapa**: Issue #7 — `Profil.jsx` 885→766 baris dengan 3 sub-komponen dan
+  17+ `useState` bercampur. Ini batch penutup.
+- **Bukti**: `Profil.jsx` **766 → 70 baris**; build Vite sukses. Verifikasi
+  struktur **19/19 lolos** (5 panel dipisah, guard tetap, alur OTP utuh, tanpa
+  `window.confirm`/`useRef` di halaman). Regresi API: Tahap 2 **17/18**
+  (S2 pre-existing), Admin **33/33**, Security **23/23**.
+- **File**: `web/src/components/profil/FotoProfil.jsx` (baru),
+  `DataDiriForm.jsx` (baru), `AlamatPanel.jsx` (baru), `GantiPassword.jsx` (baru),
+  `GantiEmail.jsx` (baru), `web/src/pages/Profil.jsx`, bundle `public/assets/*`
+  + `public/index.html`, `ENGINEER.md`.
+- **Catatan**: Batch 3 menutup #7 (god components). Sisa banner/modal duplikat
+  antar halaman (termasuk di panel baru ini) ditangani terpisah di #8 (UI kit).
+
 ### Refactor FE (Batch 2): pecah admin/Bookings.jsx — issue #7
 
 - **Apa**: `pages/admin/Bookings.jsx` (**607 baris**) dipecah jadi 1 halaman +
