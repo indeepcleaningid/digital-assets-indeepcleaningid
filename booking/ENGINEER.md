@@ -10,6 +10,30 @@
 
 ## 2026-10-16
 
+### FE polish: unifikasi struk — RiwayatDetail pakai StrukBody, strukPdf dari format.js (batch 2) — issue #3
+
+- **Apa**:
+  - `web/src/pages/RiwayatDetail.jsx` — hapus 4 blok markup yang menduplikasi
+    struk (kartu ringkasan, rincian list, alamat, alasan batal) → konten utama
+    pakai `<StrukBody>` (149 → 85 baris). Navigasi, badge status, HubungiAdmin
+    (pending), tombol Unduh Struk tetap di halaman ini.
+  - `web/src/lib/strukPdf.js` — buang 4 helper lokal (`rupiah`, `fmtDate`,
+    `fmtTime`, `statusText`) → import `formatRupiah`, `formatDateShort`,
+    `formatSlotTime`, `statusLabel` dari `lib/format.js`.
+  - Build ulang `public/` (base `/`, WA produksi).
+- **Kenapa**: Issue #3 — dua sumber tampilan struk: `RiwayatDetail` mengulang
+  `StrukBody` (output bisa beda kalau satu diubah), dan `strukPdf.js` ngedefine
+  ulang format yang output-nya beda (`"Rp 300.000"` vs `"Rp300.000"`).
+  **Catatan**: perubahan perilaku yang disengaja — harga di PDF kini seragam
+  `Rp300.000` (tanpa spasi), sama persis dengan tampilan HTML. Layout
+  `RiwayatDetail` ikut berubah (bukan lagi kartu text-center, tapi konten struk
+  + badge + aksi) — keputusan sadar biar satu sumber, bukan duplikasi.
+- **Bukti**: `npm run build` sukses; grep helper lama → 0 sisa; endpoint data
+  (`bookings-detail.php`) sama persis dengan `Struk.jsx` yang sudah memakai
+  `StrukBody` di produksi → field kompatibel.
+- **File**: `web/src/pages/RiwayatDetail.jsx`, `web/src/lib/strukPdf.js`,
+  `public/` (bundle rebuild), `ENGINEER.md`.
+
 ### FE polish: buang dead code + copy dev di 404 (batch 1) — issue #3
 
 - **Apa**:

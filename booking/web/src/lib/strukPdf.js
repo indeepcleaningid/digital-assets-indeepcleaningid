@@ -11,39 +11,14 @@
  * customer. html2pdf.js sempat dipertimbangkan tapi hasilnya raster (gambar),
  * jadi ditolak. Semua tulisan di sini pakai doc.text() → selectable.
  * Logo ditambahkan sebagai gambar PNG (boleh, yang penting tulisannya text).
+ *
+ * Format tanggal/jam/angka/status SEMUA import dari lib/format.js — satu
+ * sumber sama dengan tampilan HTML (issue #3). Dulu ada 4 helper lokal yang
+ * output-nya beda ("Rp 300.000" vs "Rp300.000").
  */
+import { formatDateShort, formatRupiah, formatSlotTime, statusLabel } from './format.js'
 
 const FONT = 'helvetica'
-
-function rupiah(v) {
-  return 'Rp ' + Number(v || 0).toLocaleString('id-ID')
-}
-
-function fmtDate(iso) {
-  const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return String(iso || '')
-  return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`
-}
-
-function fmtTime(t) {
-  const s = String(t || '')
-  if (s === '09.00') return 'Pagi 09.00'
-  if (s === '13.00') return 'Siang 13.00'
-  return s
-}
-
-function statusText(s) {
-  return ({
-    pending: 'Menunggu Konfirmasi',
-    confirmed: 'Dikonfirmasi',
-    in_progress: 'Sedang Dikerjakan',
-    completed: 'Selesai',
-    cancelled: 'Dibatalkan',
-    rejected: 'Ditolak',
-    expired: 'Kedaluwarsa',
-  })[s] || s
-}
 
 /** webp -> png data URL di browser (jsPDF tidak menerima webp) */
 async function logoPngDataUrl() {
@@ -90,7 +65,7 @@ export async function buildStrukPdf(booking) {
   y += 6
   doc.text(`Nomor booking: ${booking.code}`, margin, y)
   y += 5
-  doc.text(`Status: ${statusText(booking.status)}`, margin, y)
+  doc.text(`Status: ${statusLabel(booking.status)}`, margin, y)
   y += 4
 
   // garis pemisah
@@ -115,8 +90,8 @@ export async function buildStrukPdf(booking) {
     booking.phone_secondary ? `WA cadangan: ${booking.phone_secondary}` : null,
   ].filter(Boolean)
   const kanan = [
-    fmtDate(booking.slot_date),
-    `${fmtTime(booking.slot_time)} WIB`,
+    formatDateShort(booking.slot_date),
+    `${formatSlotTime(booking.slot_time)} WIB`,
   ]
   let yk = y
   for (const t of kiri) {
@@ -170,14 +145,14 @@ export async function buildStrukPdf(booking) {
     ...(booking.items || []).map((it) => ({
       nama: `${it.name_snapshot} ${it.size_snapshot}`.trim(),
       qty: `${Number(it.qty)} ${it.unit}`,
-      harga: rupiah(it.price_snapshot),
-      jumlah: rupiah(it.line_total),
+      harga:       formatRupiah(it.price_snapshot),
+      jumlah:       formatRupiah(it.line_total),
     })),
     ...(booking.surcharges || []).map((sc) => ({
       nama: `+ ${sc.title_snapshot}`,
       qty: `${Number(sc.qty_affected)}`,
-      harga: rupiah(sc.amount_snapshot),
-      jumlah: rupiah(sc.line_total),
+      harga:       formatRupiah(sc.amount_snapshot),
+      jumlah:       formatRupiah(sc.line_total),
     })),
   ]
   for (const b of baris) {
@@ -200,10 +175,10 @@ export async function buildStrukPdf(booking) {
   doc.setFont(FONT, 'normal')
   doc.setFontSize(9)
   doc.text('Subtotal', totalX - 45, y, { align: 'left' })
-  doc.text(rupiah(booking.subtotal), totalX, y, { align: 'right' })
+  doc.text(      formatRupiah(booking.subtotal), totalX, y, { align: 'right' })
   y += 5
   doc.text('Biaya tambahan', totalX - 45, y, { align: 'left' })
-  doc.text(rupiah(booking.surchargeTotal), totalX, y, { align: 'right' })
+  doc.text(      formatRupiah(booking.surchargeTotal), totalX, y, { align: 'right' })
   y += 7
   // garis pemisah — jarak aman dari baseline teks total (badan huruf ~4mm)
   doc.setLineWidth(0.4)
@@ -211,7 +186,7 @@ export async function buildStrukPdf(booking) {
   doc.setFont(FONT, 'bold')
   doc.setFontSize(11)
   doc.text('Total estimasi', totalX - 78, y, { align: 'left' })
-  doc.text(rupiah(booking.total), totalX, y, { align: 'right' })
+  doc.text(      formatRupiah(booking.total), totalX, y, { align: 'right' })
   y += 10
 
   // ---------- Catatan pembatalan ----------
