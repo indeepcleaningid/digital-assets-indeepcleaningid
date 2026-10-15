@@ -10,6 +10,43 @@
 
 ## 2026-10-15
 
+### Code splitting bundle FE: lazy route + dynamic import jsPDF + vendor chunk — issue #15, PR (PR ini)
+
+- **Apa**: (1) `web/src/App.jsx` — 20 import halaman statis diubah jadi
+  `React.lazy(() => import(...))` dan seluruh `<Routes>` dibungkus
+  `<Suspense fallback={<RouteFallback />}>` (fallback bergaya `AdminRoute`,
+  teks "Memuat…"). Shell (AuthProvider, CustomerLayout, AdminLayout,
+  AdminRoute) tetap statis di bundle awal. (2) `web/src/lib/strukPdf.js` —
+  `import { jsPDF } from 'jspdf'` top-level dibuang → `const { jsPDF } = await
+  import('jspdf')` di dalam `buildStrukPdf()`; signature `buildStrukPdf` /
+  `downloadStrukPdf` tidak berubah, jadi `pages/Struk.jsx` &
+  `pages/admin/Struk.jsx` tidak disentuh. (3) `web/vite.config.js` — tambah
+  `build.rollupOptions.output.manualChunks` **berbentuk fungsi** (Vite 8/\
+  Rolldown menolak object) memisahkan `react`/`react-dom`/`react-router` ke
+  chunk `vendor`. (4) Bundle FE di-`public/` di-rebuild & di-commit.
+- **Kenapa**: Issue #15 — semua halaman + jsPDF jadi satu bundle 822 KB
+  (242 KB gzip), nol code splitting. Home mengunduh jsPDF (~343 KB) +
+  seluruh route admin/booking yang tidak dipakai. Hasil: entry JS turun dari
+  **822 KB → 13.5 KB** (3.96 KB gzip); first-load total JS (entry + runtime +
+  vendor) ≈ **86 KB gzip** vs ±242 KB sebelumnya; jsPDF & optional-dep-nya
+  (html2canvas/canvg/dompurify) jadi chunk terpisah yang hanya diunduh saat
+  user benar-benar klik "Download PDF".
+- **Bukti build ulang** (`VITE_WA_ADMIN=6287748244464 npm run build`):
+  `index-*.js` 13.52 KB, `vendor-*.js` 259.49 KB (82.39 KB gzip),
+  `jspdf.es.min-*.js` 398.95 KB, per-route chunk 0.7–27.9 KB. Entry chunk
+  hanya meng-`import` runtime + vendor (jsPDF dkk **tidak** di first-load);
+  `index.html` hasil build hanya preload entry + runtime + vendor + CSS.
+  `vite preview` smoke: `/`, chunk `Home-*.js`, chunk `jspdf.es.min-*.js`
+  semua balas 200.
+- **Catatan**: optionalDependencies jsPDF (`html2canvas`, `canvg`,
+  `dompurify`) tetap ter-emit sebagai chunk karena terpasang di
+  `node_modules`, tetapi bukan bagian first-load — bukan regresi, hanya
+  artefak optional dep. `prebuild` (`rm -rf ../public/assets`) membersihkan
+  bundle lama tiap build.
+- **File**: `web/src/App.jsx`, `web/src/lib/strukPdf.js`,
+  `web/vite.config.js`, `public/index.html` + `public/assets/*` (build),
+  `ENGINEER.md`.
+
 ### Validasi alamat disatukan: `address_validate` tunggal + label/postal opsional — issue #16, PR #39 (PR ini)
 
 - **Apa**: (1) Fungsi validasi tunggal baru `app/lib/address.php`

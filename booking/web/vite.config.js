@@ -17,6 +17,19 @@ export default defineConfig({
     outDir: '../public',
     // public/ isi api/, brand/, uploads/, .htaccess — jangan dikosongin!
     emptyOutDir: false,
+    // Pisahkan vendor framework ke chunk sendiri (issue #15): react/react-dom/
+    // react-router jarang berubah, jadi cache-nya bisa tahan lintas deploy
+    // sementara chunk halaman (lazy) tetap kecil & ber-hash per route.
+    // CATATAN: Vite 8 pakai Rolldown → manualChunks WAJIB fungsi, object ditolak.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id.includes('node_modules/react-router')) {
+            return 'vendor'
+          }
+        },
+      },
+    },
   },
   server: {
     // strictPort mati: bila 5173 penuh, Vite auto geser ke 5174/5175 (PRD Bab 14.4)

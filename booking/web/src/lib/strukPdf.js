@@ -1,7 +1,11 @@
-import { jsPDF } from 'jspdf'
-
 /**
  * Download struk PDF text-based (jsPDF, tanpa print dialog browser).
+ *
+ * jsPDF di-load DINAMIS (`import('jspdf')`) di dalam buildStrukPdf(), bukan
+ * import statis di atas file. Alasannya (issue #15): import statis menyeret
+ * jsPDF (~343 KB) ke bundle utama, padahal jsPDF cuma dipakai 2 halaman struk.
+ * Dengan dynamic import, chunk jsPDF baru diunduh saat user benar-benar klik
+ * "Download PDF".
  *
  * Keputusan Bang Rob: hasil PDF WAJIB text-based — tulisan bisa di-copy-paste
  * customer. html2pdf.js sempat dipertimbangkan tapi hasilnya raster (gambar),
@@ -59,6 +63,8 @@ async function logoPngDataUrl() {
 
 /** Bangun dokumen jsPDF (tanpa save) — dipakai downloadStrukPdf & uji otomatis. */
 export async function buildStrukPdf(booking) {
+  // Dynamic import — jsPDF masuk chunk terpisah (issue #15).
+  const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = 210
   const margin = 18
