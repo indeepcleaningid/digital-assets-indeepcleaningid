@@ -16,6 +16,11 @@ require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/session.php';
 require __DIR__ . '/../../app/lib/otp.php';
 require __DIR__ . '/../../app/lib/audit.php';
+require __DIR__ . '/../../app/lib/ratelimit.php';
+
+// 20 percobaan / menit / IP tepercaya (REMOTE_ADDR, bukan XFF yang bisa
+// dipalsukan) — defense in depth di atas attempt cap 5x salah (issue #25).
+rate_limit('auth:otp-verify', 20, 60, trusted_ip());
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');

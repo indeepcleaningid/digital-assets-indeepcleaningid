@@ -5,11 +5,16 @@
  *
  * Pakai: rate_limit('pub:quote', 60, 60);  // 60 request / 60 detik / IP / bucket
  * Lolos -> diam. Kena limit -> 429 + `json_error` (langsung berhenti).
+ *
+ * Bucket AUTH wajib key di IP tepercaya (REMOTE_ADDR) lewat argumen ke-4:
+ *   rate_limit('auth:otp-verify', 20, 60, trusted_ip());
+ * client_ip() percaya X-Forwarded-For yang bisa dipalsukan client, jadi
+ * rotasi XFF bisa membobol limit auth kalau pakai default (issue #25).
  */
 
 declare(strict_types=1);
 
-function rate_limit(string $bucket, int $maxHits, int $windowSeconds): void
+function rate_limit(string $bucket, int $maxHits, int $windowSeconds, ?string $ip = null): void
 {
     static $ready = false;
     $pdo = db();
@@ -28,7 +33,7 @@ function rate_limit(string $bucket, int $maxHits, int $windowSeconds): void
         $ready = true;
     }
 
-    $ip = client_ip();
+    $ip ??= client_ip();
 
     $pdo->beginTransaction();
     try {

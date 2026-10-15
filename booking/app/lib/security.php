@@ -2,6 +2,7 @@
 /**
  * Penjaga tambahan keamanan request (PRD Bab 18).
  * - client_ip(): IP asli dari X-Forwarded-For (1 hop) atau REMOTE_ADDR.
+ * - trusted_ip(): REMOTE_ADDR saja — untuk bucket rate limit auth (anti XFF spoof).
  * - origin_check(): endpoint TULIS (POST/PATCH/PUT/DELETE) hanya menerima
  *   Origin dari whitelist frontend (WEB_URL/APP_URL). Request tanpa header
  *   Origin (curl CLI) dibiarkan — Origin dikirim browser.
@@ -19,6 +20,17 @@ function client_ip(): string
             return $first;
         }
     }
+    return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+/**
+ * IP tepercaya untuk bucket rate limit AUTH: selalu REMOTE_ADDR.
+ * X-Forwarded-For TIDAK dipakai — header itu bisa dipalsukan client, jadi
+ * rotasi XFF membobol limit kalau key-nya client_ip(). Konsisten dengan
+ * admin-login.php & login.php yang basis REMOTE_ADDR (issue #25).
+ */
+function trusted_ip(): string
+{
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 }
 

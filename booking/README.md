@@ -406,9 +406,13 @@ Memindahkannya ke root repo adalah pekerjaan terpisah (belum ada PR-nya).
 
 - **CI belum jalan** — workflow harus dipindah ke root repo dulu (pekerjaan
   terpisah; lihat [Deployment dan CI/CD](#deployment-dan-cicd))
-- **Rate limit IP belum "tepercaya"** — `login_attempts` dihitung per
-  `REMOTE_ADDR` dan dipakai bersama admin + customer tanpa filter username;
-  di belakang CDN bisa jadi bucket bersama. Pembahasan: issue #25
+- **Rate limit IP: key `REMOTE_ADDR`, belum siap CDN** — endpoint auth
+  (`otp-request`, `otp-verify`, `admin-login`, `login`) di-hitung per
+  `REMOTE_ADDR` (anti XFF spoof, issue #25); `login_attempts` dipakai
+  bersama admin + customer tanpa filter username. Trade-off-nya: kalau
+  nanti dipasang CDN/proxy di depan, `REMOTE_ADDR` jadi IP proxy → semua
+  client masuk bucket bersama — evaluasi trusted-proxy dulu sebelum
+  pasang CDN (endpoint publik sudah beda jalur: `client_ip()` baca XFF)
 - **`app/models/` belum ada** — query PDO masih langsung di endpoint. Diskusi
   arsitektur: issue #13
 - **2 cron jobs hPanel** wajib ada (5 menit expire-bookings, 10 menit
