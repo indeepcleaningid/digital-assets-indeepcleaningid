@@ -19,6 +19,7 @@ require __DIR__ . '/../../app/lib/session.php';
 require __DIR__ . '/../../app/lib/quote.php';
 require __DIR__ . '/../../app/lib/audit.php';
 require __DIR__ . '/../../app/lib/slots.php';
+require __DIR__ . '/../../app/lib/address.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
@@ -107,24 +108,10 @@ if ($addressId !== null && $addressId > 0) {
         json_error(400, 'address_invalid', 'Alamat tidak ditemukan. Pilih atau isi ulang alamat ya.');
     }
 } elseif ($newAddress !== null) {
-    $streetNo = trim((string) ($newAddress['streetNo'] ?? ''));
-    $village  = trim((string) ($newAddress['village'] ?? ''));
-    $district = trim((string) ($newAddress['district'] ?? ''));
-    $city     = trim((string) ($newAddress['city'] ?? ''));
-    $province = trim((string) ($newAddress['province'] ?? ''));
-    $postal   = trim((string) ($newAddress['postal'] ?? ''));
-    $note     = trim((string) ($newAddress['note'] ?? ''));
-    $mapsUrl  = trim((string) ($newAddress['mapsUrl'] ?? ''));
-    $label    = trim((string) ($newAddress['label'] ?? ''));
-
-    if ($streetNo === '' || $village === '' || $district === '' || $city === '' || $province === '') {
-        json_error(400, 'alamat_belum_lengkap', 'Alamat belum lengkap. Isi nomor rumah, kelurahan, kecamatan, kota, dan provinsi ya.');
-    }
-    if (mb_strlen($streetNo) > 190 || mb_strlen($village) > 100 || mb_strlen($district) > 100
-        || mb_strlen($city) > 100 || mb_strlen($province) > 100 || mb_strlen($note) > 255
-        || mb_strlen($mapsUrl) > 255 || mb_strlen($label) > 50 || mb_strlen($postal) > 10) {
-        json_error(400, 'address_invalid', 'Ada isian alamat yang kepanjangan ya. Pendekkan dulu.');
-    }
+    // Aturan seragam dengan profil (app/lib/address.php, issue #16) —
+    // kontrak snake_case, camelCase (streetNo/mapsUrl) masih diterima
+    // untuk bundle FE lama yang ke-cache.
+    $data = address_validate($newAddress);
 
     // Alamat baru jadi default otomatis kalau user belum punya alamat default sama sekali.
     $hasDefault = $pdo->prepare('SELECT COUNT(*) AS c FROM addresses WHERE user_id = ? AND is_default = 1');
@@ -137,12 +124,9 @@ if ($addressId !== null && $addressId > 0) {
     );
     $ins->execute([
         (int) $user['id'],
-        $label !== '' ? $label : null,
-        $streetNo, $village, $district, $city, $province,
-        $postal !== '' ? $postal : null,
-        $note !== '' ? $note : null,
-        $mapsUrl !== '' ? $mapsUrl : null,
-        $isDefault,
+        $data['label'], $data['street_no'], $data['village'], $data['district'],
+        $data['city'], $data['province'], $data['postal'], $data['note'],
+        $data['maps_url'], $isDefault,
     ]);
     $newId = (int) $pdo->lastInsertId();
 

@@ -363,6 +363,9 @@ async function uji11_pindahJadwalAturan() {
   const [idStr] = helper('seed-booking-pending', EMAIL_CUSTOMER, '2026-11-05', '09.00').split(' ')
   const id = Number(idStr)
 
+  // Bersihkan counter orphan di slot tujuan dari run sebelumnya (issue #38)
+  helper('recount-slot', ymd(valid), '13.00')
+
   const ditolakBiasa = await req(
     'PATCH', '/admin/bookings.php',
     { id, slot_date: ymd(valid), slot_time: '13.00' }, cBiasa,

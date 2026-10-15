@@ -10,6 +10,8 @@
  *   6. Cutoff hari H (lewat 7 jam) ditolak 409
  *   7. Balapan slot: satu menang, satu ditolak 409 (transaksi InnoDB FOR UPDATE)
  *   8. Idempotency: klik dobel tidak jadi double order
+ *   9. Kontrak alamat seragam: tanpa label/postal bisa dipakai & diedit,
+ *      postal salah format ditolak (issue #16)
  *
  * Pakai: backend jalan dulu (docker compose up -d), lalu
  *   node scripts/uji-tahap2.mjs
@@ -311,6 +313,90 @@ async function main() {
     check('S8c hanya ada 1 booking untuk kode itu', hitung === 1, `jumlah=${hitung}`)
   }
 
+  // ---------- SKENARIO 9: Kontrak alamat seragam (issue #16) ----------
+  console.log('Skenario 9 — Alamat tanpa label/postal tetap bisa dikelola (profil ↔ wizard)')
+  {
+    // Tanpa label & postal (persis alamat hasil wizard) → POST sukses
+    const dibuat = await req('/addresses.php', {
+      method: 'POST',
+      body: {
+        street_no: 'Jl Uji Alamat No 9',
+        village: 'Sukamaju',
+        district: 'Cilodong',
+        city: 'Depok',
+        province: 'Jawa Barat',
+      },
+    })
+    const alamatId = dibuat.data?.data?.id
+    check(
+      'POST alamat tanpa label+postal → 200 (kontrak wizard)',
+      dibuat.status === 200 && Number(alamatId) > 0,
+      JSON.stringify(dibuat.data),
+    )
+
+    // PATCH alamat yang sama tanpa label+postal — INI bug kuncinya (dulu 400 label wajib)
+    if (alamatId) {
+      const diedit = await req('/addresses.php', {
+        method: 'PATCH',
+        body: {
+          id: alamatId,
+          street_no: 'Jl Uji Alamat No 9 (diedit)',
+          village: 'Sukamaju',
+          district: 'Cilodong',
+          city: 'Depok',
+          province: 'Jawa Barat',
+          note: 'Diedit tanpa label/postal',
+        },
+      })
+      check(
+        'PATCH tanpa label+postal → 200 (bug kuncinya)',
+        diedit.status === 200 && diedit.data?.data?.street_no === 'Jl Uji Alamat No 9 (diedit)',
+        JSON.stringify(diedit.data),
+      )
+    } else {
+      check('PATCH tanpa label+postal → 200 (bug kuncinya)', false, 'alamat tidak terbuat')
+    }
+
+    // Postal diisi tapi salah format → ditolak
+    const postalSalah = await req('/addresses.php', {
+      method: 'POST',
+      body: {
+        street_no: 'Jl Postal Salah',
+        village: 'Sukamaju',
+        district: 'Cilodong',
+        city: 'Depok',
+        province: 'Jawa Barat',
+        postal: '12',
+      },
+    })
+    check(
+      'POST postal "12" → 400 address_invalid',
+      postalSalah.status === 400 && postalSalah.data?.code === 'address_invalid',
+      JSON.stringify(postalSalah.data),
+    )
+
+    // Field wajib hilang → ditolak
+    const tanpaKelurahan = await req('/addresses.php', {
+      method: 'POST',
+      body: {
+        street_no: 'Jl Tanpa Kelurahan',
+        district: 'Cilodong',
+        city: 'Depok',
+        province: 'Jawa Barat',
+      },
+    })
+    check(
+      'POST tanpa kelurahan → 400 address_invalid',
+      tanpaKelurahan.status === 400 && tanpaKelurahan.data?.code === 'address_invalid',
+      JSON.stringify(tanpaKelurahan.data),
+    )
+
+    // Bersih-bersih (diam-diam; kalau kebetulan jadi default, biarkan)
+    if (alamatId) {
+      await req(`/addresses.php?id=${alamatId}`, { method: 'DELETE' })
+    }
+  }
+
   // ---------- Teardown: batalkan booking uji biar slot bebas ----------
   if (createdIds.length > 0) {
     for (const id of createdIds) {
@@ -326,7 +412,7 @@ async function main() {
   const lolos = results.filter((r) => r.pass).length
   console.log(`\n=== RINGKASAN: ${lolos}/${results.length} lolos ===`)
   if (lolos === results.length) {
-    console.log('🏆 SEMUA 8 SKENARIO LOLOS — Tahap 2 siap ditutup.')
+    console.log('🏆 SEMUA 9 SKENARIO LOLOS — Tahap 2 siap ditutup.')
     process.exit(0)
   } else {
     console.log('⚠️  Ada skenario gagal. Periksa sebelum lanjut.')

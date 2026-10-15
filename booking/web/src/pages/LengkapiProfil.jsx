@@ -129,7 +129,7 @@ export default function LengkapiProfil() {
         </div>
         <label className="block text-sm font-bold">
           Nama jalan dan nomor <span className="text-red-600">*</span>
-          <input required maxLength={255} value={street} onChange={(e) => setStreet(e.target.value)} className="input-brutal mt-1" placeholder="Jl. Melati No. 12" />
+          <input required maxLength={190} value={street} onChange={(e) => setStreet(e.target.value)} className="input-brutal mt-1" placeholder="Jl. Melati No. 12" />
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm font-bold">
