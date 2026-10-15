@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Rate limit IP tepercaya di otp-request, otp-verify & otp-email-request-old (20/menit, key REMOTE_ADDR) — issue #25, PR ini
+### Rate limit IP tepercaya di otp-request, otp-verify & otp-email-request-old (20/menit, key REMOTE_ADDR) — issue #25, PR #35 (PR ini)
 
 - **Apa**: `rate_limit()` dapat parameter opsional `$ip` (default tetap
   `client_ip()` — endpoint publik tidak berubah); helper baru `trusted_ip()`
