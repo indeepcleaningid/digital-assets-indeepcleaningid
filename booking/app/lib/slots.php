@@ -67,10 +67,15 @@ function slot_times(): array
 }
 
 /**
- * Pastikan baris slot (slot_date, slot_time) ada — idempoten, aman balapan
- * (unique key uq_slots_date_time + INSERT IGNORE). Kapasitas default dibaca
- * dari config SLOT_CAPACITY_DEFAULT; $capacity hanya diisi kalau pemanggil
- * punya nilai eksplisit (mis. tambah slot manual superadmin).
+ * Pastikan baris slot (slot_date, slot_time) ada — idempoten, aman balapan.
+ * Kapasitas default dibaca dari config SLOT_CAPACITY_DEFAULT; $capacity hanya
+ * diisi kalau pemanggil punya nilai eksplisit (mis. tambah slot manual).
+ *
+ * Sengaja pakai INSERT … ON DUPLICATE KEY UPDATE (no-op), BUKAN INSERT IGNORE:
+ * pada baris yang sudah ada, INSERT IGNORE mengambil SHARED lock, yang lalu
+ * di-upgrade ke EXCLUSIVE oleh `SELECT … FOR UPDATE` berikutnya — dua request
+ * bersamaan bisa deadlock (S→X upgrade). ODKU langsung mengambil EXCLUSIVE lock
+ * sehingga request kedua menunggu dengan rapi (serialisasi), bukan deadlock.
  *
  * Panggil DALAM transaksi kalau setelah ini barisnya mau langsung dikunci
  * (`SELECT … FOR UPDATE`). Untuk jalur baca-saja jangan dipakai — GET publik
@@ -83,7 +88,9 @@ function slot_ensure(PDO $pdo, string $slotDate, string $slotTime, ?int $capacit
         $cap = 1;
     }
     $pdo->prepare(
-        'INSERT IGNORE INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, ?, 0)'
+        'INSERT INTO slots (slot_date, slot_time, capacity, booked)
+         VALUES (?, ?, ?, 0)
+         ON DUPLICATE KEY UPDATE id = id'
     )->execute([$slotDate, $slotTime, $cap]);
 }
 

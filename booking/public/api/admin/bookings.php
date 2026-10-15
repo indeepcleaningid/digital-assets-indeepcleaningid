@@ -120,12 +120,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
             json_error(400, 'bad_request', 'Jadwal baru sama dengan jadwal lama ya.');
         }
 
+        $oldDate = (string) $cur['slot_date'];
+        $oldTime = (string) $cur['slot_time'];
+
         $pdo->beginTransaction();
         try {
-            // Slot baru: pastikan ada (kapasitas dari config), tidak locked, ada kapasitas
-            slot_ensure($pdo, $newDate, $newTime);
+            // Kunci dua baris slot (lama & baru) dalam urutan tetap (tanggal, jam
+            // naik) supaya dua pemindahan bersamaan tidak saling deadlock.
+            $locks = [['d' => $oldDate, 't' => $oldTime], ['d' => $newDate, 't' => $newTime]];
+            usort($locks, static fn(array $a, array $b): int => [$a['d'], $a['t']] <=> [$b['d'], $b['t']]);
+            foreach ($locks as $L) {
+                slot_ensure($pdo, $L['d'], $L['t']);
+                $pdo->prepare('SELECT id FROM slots WHERE slot_date = ? AND slot_time = ? FOR UPDATE')
+                    ->execute([$L['d'], $L['t']]);
+            }
 
-            $st = $pdo->prepare('SELECT id, capacity, booked, is_locked FROM slots WHERE slot_date = ? AND slot_time = ? FOR UPDATE');
+            // Satu strategi counter (issue #11): recount dari bookings sebelum
+            // cek kapasitas, biar tidak bergantung sisa counter yang bisa drift.
+            slot_recount($pdo, $oldDate, $oldTime);
+            slot_recount($pdo, $newDate, $newTime);
+
+            $st = $pdo->prepare('SELECT id, capacity, booked, is_locked FROM slots WHERE slot_date = ? AND slot_time = ?');
             $st->execute([$newDate, $newTime]);
             $newSlot = $st->fetch();
             if (!$newSlot || (int) $newSlot['is_locked'] === 1 || (int) $newSlot['booked'] >= (int) $newSlot['capacity']) {
@@ -133,17 +148,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
                 json_error(409, 'slot_full', 'Slot tujuan sudah penuh atau dikunci ya. Pilih jadwal lain.');
             }
 
-            // IF, bukan GREATEST(booked-1, 0): aritmetika UNSIGNED meledak di
-            // 0-1 sebelum GREATEST sempat clamp (underflow 1690, issue #17)
-            $pdo->prepare('UPDATE slots SET booked = IF(booked > 0, booked - 1, 0) WHERE slot_date = ? AND slot_time = ?')
-                ->execute([$cur['slot_date'], $cur['slot_time']]);
-            $pdo->prepare('UPDATE slots SET booked = booked + 1 WHERE id = ?')->execute([(int) $newSlot['id']]);
             $pdo->prepare(
                 'UPDATE bookings SET slot_date = ?, slot_time = ?, version = version + 1, updated_at = NOW() WHERE id = ?'
             )->execute([$newDate, $newTime, $id]);
+
+            // Recount lagi setelah booking pindah (tanpa aritmetika booked±1)
+            slot_recount($pdo, $oldDate, $oldTime);
+            slot_recount($pdo, $newDate, $newTime);
             $pdo->commit();
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             json_error(500, 'move_failed', 'Gagal memindah jadwal. Coba lagi ya.');
         }
 
@@ -173,25 +189,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
         json_error(400, 'reason_required', 'Alasan wajib diisi untuk membatalkan atau menolak booking ya.');
     }
 
-    // Optimistic lock: hanya update kalau versi masih sama (Bab 11 poin 7)
-    $upd = $pdo->prepare(
-        "UPDATE bookings
-         SET status = ?, version = version + 1,
-             cancel_reason = COALESCE(?, cancel_reason), updated_at = NOW()
-         WHERE id = ? AND version = ?"
-    );
-    $upd->execute([$status, $reason !== '' ? $reason : null, $id, $expectedVersion]);
-    if ($upd->rowCount() === 0) {
-        json_error(409, 'conflict', 'Booking baru saja diubah orang lain. Muat ulang dulu ya.');
-    }
+    // Update booking + sinkron counter slot ATOMIK dalam satu transaksi
+    // (issue #11: dulu dua write terpisah — crash di tengah = counter nyasar).
+    $pdo->beginTransaction();
+    try {
+        // Optimistic lock: hanya update kalau versi masih sama (Bab 11 poin 7)
+        $upd = $pdo->prepare(
+            "UPDATE bookings
+             SET status = ?, version = version + 1,
+                 cancel_reason = COALESCE(?, cancel_reason), updated_at = NOW()
+             WHERE id = ? AND version = ?"
+        );
+        $upd->execute([$status, $reason !== '' ? $reason : null, $id, $expectedVersion]);
+        if ($upd->rowCount() === 0) {
+            $pdo->rollBack();
+            json_error(409, 'conflict', 'Booking baru saja diubah orang lain. Muat ulang dulu ya.');
+        }
 
-    // Cancel/reject admin wajib buka slot (bugfix: dulu customer-cancel melepas
-    // slot tapi admin-cancel tidak — count nyasar). Recount dari source of truth.
-    if (in_array($status, ['cancelled', 'rejected'], true)) {
-        slot_recount($pdo, (string) $cur['slot_date'], (string) $cur['slot_time']);
-    }
+        // Cancel/reject membebaskan slot. Status yang tetap menghitung booked
+        // (confirmed/in_progress/completed) tidak perlu recount. Recount dari
+        // source of truth (bookings) — satu strategi (issue #11).
+        if (in_array($status, ['cancelled', 'rejected'], true)) {
+            slot_recount($pdo, (string) $cur['slot_date'], (string) $cur['slot_time']);
+        }
 
-    audit_log((int) $user['id'], $user['role'], 'booking_status', $id, $from, $status, $reason !== '' ? $reason : null);
+        audit_log((int) $user['id'], $user['role'], 'booking_status', $id, $from, $status, $reason !== '' ? $reason : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 
     json_response(['data' => ['ok' => true, 'id' => $id, 'status' => $status, 'version' => $expectedVersion + 1]]);
 }

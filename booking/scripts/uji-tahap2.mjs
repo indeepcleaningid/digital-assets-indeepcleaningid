@@ -281,7 +281,8 @@ async function main() {
     const av = await req(`/availability.php?from=${jumat}&to=${jumat}`)
     const day = av.data?.data?.days?.[0]
     const slot = day?.slots?.find((s) => s.time === '09.00')
-    check('S7b availability laporkan slot 09.00 PENUH', slot?.status === 'penuh', `status=${slot?.status} booked=${slot?.booked}`)
+    // Assert counter (issue #11): 1 pemenang → slots.booked tepat 1 (bukan 0/2)
+    check('S7b availability laporkan slot 09.00 PENUH (counter=1)', slot?.status === 'penuh' && slot?.booked === 1, `status=${slot?.status} booked=${slot?.booked}`)
   }
 
   // ---------- SKENARIO 8: Idempotency ----------
