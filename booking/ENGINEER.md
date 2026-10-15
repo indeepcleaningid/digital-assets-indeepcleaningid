@@ -10,6 +10,22 @@
 
 ## 2026-10-16
 
+### Security: blokir nama file repo tanpa ekstensi (LICENSE/dst) — follow-up issue #1
+
+- **Apa**:
+  - Tambah `RewriteRule ^(LICENSE|README|SECURITY|NOTICE|CHANGELOG|Makefile|Dockerfile)(\.(md|txt))?$ - [F,L,NC]`
+    di `booking/.htaccess`.
+  - Anchoring `^...$` biar cuma kena nama file exact, bukan jalur lain.
+- **Kenapa**: Validasi production PR #60 menemukan rule ekstensi
+  (`\.(md|sql|...)`) lolos buat file tanpa ekstensi — `/LICENSE` masih 200 OK
+  (padahal issue #1 nyebut LICENSE ikut kebaca). Di repo `booking/` memang ada
+  file tanpa ekstensi nyata: `LICENSE`, `Dockerfile` (plus `.gitignore`,
+  `.dockerignore` yang sudah ke-block rule dotfile).
+- **Bukti**: setelah deploy, `curl` ke `/LICENSE`, `/Dockerfile`, `/README`,
+  `/SECURITY`, `/Makefile` harus **403**; jalur normal (`/`, `/api/*`, `assets/*`)
+  tetap **200** — dicek manual setelah auto-deploy.
+- **File**: `booking/.htaccess`, `ENGINEER.md`.
+
 ### Security: blokir ekstensi sensitif (.md/.sql/.log/.db/.env/dst) di .htaccess — issue #1
 
 - **Apa**:
