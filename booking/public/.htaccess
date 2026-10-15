@@ -3,6 +3,9 @@
 
 # --- Security headers (PRD Bab 18) ---
 <IfModule mod_headers.c>
+    # HSTS (issue #28): paksa HTTPS 1 tahun termasuk subdomain. Tanpa `preload`
+    # dulu — tunggu semua subdomain di domain ini siap HTTPS sepenuhnya.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set Referrer-Policy "strict-origin-when-cross-origin"

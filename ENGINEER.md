@@ -63,6 +63,27 @@ nama repo dan URL clone.
 
 ## 2026-10-15
 
+### Security: header HSTS di website utama + booking (issue #28)
+
+**Apa:** Tambah header `Strict-Transport-Security` di root `.htaccess` dan
+`booking/public/.htaccess`.
+
+**Kenapa:** Tanpa HSTS, browser masih memulai request HTTP pertama yang bisa
+diganggu (SSL-strip) sebelum redirect 301 ke HTTPS berlaku. 1 baris, biaya
+hampir nol.
+
+**Yang berubah:**
+- Nilai: `max-age=31536000; includeSubDomains` (**tanpa** `preload` — tunggu
+  semua subdomain siap HTTPS penuh).
+- Dipasang di header utama (`Header always set`) supaya tetap terkirim di
+  respons redirect maupun error.
+
+**File:** `.htaccess`, `booking/public/.htaccess`
+
+---
+
+## 2026-10-15
+
 ### SEO website: H1 about.html + meta description + title baby-stuff (issue #20, #21, #22)
 
 **Apa:** Perbaikan SEO on-page di website utama (root).
