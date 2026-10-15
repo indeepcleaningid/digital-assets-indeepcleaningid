@@ -29,6 +29,20 @@ const BTN_CTA = 'btn text-xs btn-cta'
 const BTN_NEED_REASON = 'btn text-xs border-red-700 bg-red-50 text-red-800 hover:bg-red-100 hover:translate-x-px hover:translate-y-px'
 const BTN_PLAIN = 'btn text-xs btn-press'
 
+// Tanggal lokal browser (bukan toISOString — itu UTC) buat min/max input
+// pindah jadwal: hari ini s/d H+30, aturan sama dengan backend (issue #17)
+function hariLokal(offsetHari = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetHari)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+// Guard UX Selasa (backend juga menolak — slot_assert_date_rules, issue #17)
+function isSelasa(ymd) {
+  return ymd !== '' && new Date(`${ymd}T00:00:00`).getDay() === 2
+}
+
 const STATUS_OPTIONS = [
   '', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected', 'expired',
 ]
@@ -98,6 +112,7 @@ export default function AdminBookings() {
 
   // dialog pindah jadwal & hapus (superadmin)
   const [move, setMove] = useState(null) // { booking, slot_date, slot_time, reason }
+  const [moveError, setMoveError] = useState('')
   const [hapus, setHapus] = useState(null) // booking yang mau dihapus
 
   const muat = useCallback(async () => {
@@ -180,11 +195,15 @@ export default function AdminBookings() {
   async function simpanPindah() {
     if (!move) return
     if (!move.slot_date || !move.slot_time) {
-      setError('Pilih tanggal dan jam baru dulu ya.')
+      setMoveError('Pilih tanggal dan jam baru dulu ya.')
+      return
+    }
+    if (isSelasa(move.slot_date)) {
+      setMoveError('Selasa kami libur ya. Pilih Rabu sampai Senin.')
       return
     }
     setBusy(true)
-    setError('')
+    setMoveError('')
     setSuccess('')
     try {
       await api('/admin/bookings.php', {
@@ -200,7 +219,7 @@ export default function AdminBookings() {
       setMove(null)
       await muat()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memindah jadwal.')
+      setMoveError(err instanceof ApiError ? err.message : 'Gagal memindah jadwal.')
     } finally {
       setBusy(false)
     }
@@ -363,7 +382,7 @@ export default function AdminBookings() {
                     {isSuper && ['pending', 'confirmed'].includes(b.status) ? (
                       <button
                         type="button"
-                        onClick={() => setMove({ booking: b, slot_date: b.slot_date, slot_time: b.slot_time, reason: '' })}
+                        onClick={() => { setMove({ booking: b, slot_date: b.slot_date, slot_time: b.slot_time, reason: '' }); setMoveError('') }}
                         className="btn btn-press text-xs"
                       >
                         Pindah
@@ -458,7 +477,7 @@ export default function AdminBookings() {
                 {isSuper && ['pending', 'confirmed'].includes(b.status) ? (
                   <button
                     type="button"
-                    onClick={() => setMove({ booking: b, slot_date: b.slot_date, slot_time: b.slot_time, reason: '' })}
+                    onClick={() => { setMove({ booking: b, slot_date: b.slot_date, slot_time: b.slot_time, reason: '' }); setMoveError('') }}
                     className="btn btn-press text-xs"
                   >
                     Pindah
@@ -540,7 +559,18 @@ export default function AdminBookings() {
             </p>
             <label className="mt-4 block text-sm font-bold">
               Tanggal baru
-              <input type="date" value={move.slot_date} onChange={(e) => setMove({ ...move, slot_date: e.target.value })} className="input-brutal mt-1" />
+              <input
+                type="date"
+                value={move.slot_date}
+                min={hariLokal()}
+                max={hariLokal(30)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setMove({ ...move, slot_date: v })
+                  setMoveError(isSelasa(v) ? 'Selasa kami libur ya. Pilih Rabu sampai Senin.' : '')
+                }}
+                className="input-brutal mt-1"
+              />
             </label>
             <label className="mt-3 block text-sm font-bold">
               Jam baru
@@ -554,11 +584,14 @@ export default function AdminBookings() {
               Alasan (opsional)
               <input value={move.reason} maxLength={500} onChange={(e) => setMove({ ...move, reason: e.target.value })} className="input-brutal mt-1" placeholder="Contoh: customer minta ganti hari" />
             </label>
+            {moveError ? (
+              <p role="alert" className="mt-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{moveError}</p>
+            ) : null}
             <div className="mt-4 flex gap-2">
               <button type="button" disabled={busy} onClick={simpanPindah} className="btn btn-cta">
                 {busy ? 'Memindah…' : 'Pindahkan'}
               </button>
-              <button type="button" onClick={() => setMove(null)} className="btn btn-ghost">Batal</button>
+              <button type="button" onClick={() => { setMove(null); setMoveError('') }} className="btn btn-ghost">Batal</button>
             </div>
           </div>
         </div>

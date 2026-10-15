@@ -1,6 +1,9 @@
 <?php
 /**
- * Helper sinkronisasi counter slots.booked (bugfix T8-B5 post-E2E).
+ * Helper domain slot/jadwal:
+ * - sinkronisasi counter slots.booked (bugfix T8-B5 post-E2E)
+ * - aturan tanggal jadwal bersama: Selasa libur, tidak lewat, maks H+30
+ *   (issue #17 — dipakai create customer & reschedule admin)
  *
  * slots.booked adalah counter turunan; source of truth = tabel bookings.
  * Sebelum fix, hard delete & cancel-admin memakai decrement manual tersebar —
@@ -50,4 +53,38 @@ function slot_recount_many(PDO $pdo, array $pairs): void
         $seen[$key] = true;
         slot_recount($pdo, (string) $p['slot_date'], (string) $p['slot_time']);
     }
+}
+
+/**
+ * Aturan tanggal jadwal BERSAMA (BR01 Selasa libur, tidak lewat, maks H+30).
+ * Satu aturan untuk bookings-create (customer) & reschedule admin — jangan
+ * ditulis ulang di endpoint lain (issue #17). Backend jangan percaya frontend.
+ *
+ * @return DateTimeImmutable tanggal valid (sudah terverifikasi format Y-m-d)
+ * Melempar json_error(400) kalau format salah / lewat / melebihi H+30 / Selasa.
+ */
+function slot_assert_date_rules(string $dateRaw): DateTimeImmutable
+{
+    $d = DateTimeImmutable::createFromFormat('Y-m-d', $dateRaw);
+    $err = DateTimeImmutable::getLastErrors();
+    if (!$d || $dateRaw === '' || ($err !== false && ($err['warning_count'] > 0 || $err['error_count'] > 0))) {
+        json_error(400, 'date_invalid', 'Pilih tanggal dulu ya.');
+    }
+
+    $todayStr = (new DateTimeImmutable('now'))->format('Y-m-d'); // WIB — bootstrap
+
+    if ($dateRaw < $todayStr) {
+        json_error(400, 'date_invalid', 'Tanggal sudah lewat. Pilih tanggal ke depan ya.');
+    }
+
+    $maxDate = new DateTimeImmutable($todayStr . ' +30 days');
+    if ($dateRaw > $maxDate->format('Y-m-d')) {
+        json_error(400, 'date_invalid', 'Jadwal maksimal 30 hari ke depan ya.');
+    }
+
+    if ((int) $d->format('N') === 2) {
+        json_error(400, 'hari_selasa', 'Selasa kami libur ya. Pilih Rabu sampai Senin.');
+    }
+
+    return $d;
 }

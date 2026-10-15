@@ -4,6 +4,7 @@
  *
  * Cakupan: guard role (customer 403, admin biasa vs superadmin),
  * dashboard, bookings (transisi + optimistic lock + alasan wajib),
+ * pindah jadwal (aturan Selasa/lewat/H+30, issue #17),
  * slots (lock + kapasitas + validasi), customers, pricelist, reports, logs.
  */
 
@@ -338,6 +339,84 @@ async function uji10_reportsLogs() {
   helper('hapus-booking', id)
 }
 
+async function uji11_pindahJadwalAturan() {
+  console.log('\n[11] Pindah jadwal: aturan Selasa/lewat/H+30 — sama dengan create customer')
+  const sa = await loginAdmin()
+
+  const pad = (n) => String(n).padStart(2, '0')
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const hari = (offset) => {
+    const d = new Date()
+    d.setDate(d.getDate() + offset)
+    return d
+  }
+  // Selasa berikutnya (selalu <= +8 hari, otomatis dalam window H+30)
+  const selasa = hari(1)
+  while (selasa.getDay() !== 2) selasa.setDate(selasa.getDate() + 1)
+  // Hari valid pertama: >= +3 hari dan bukan Selasa
+  const valid = hari(3)
+  while (valid.getDay() === 2) valid.setDate(valid.getDate() + 1)
+
+  // Guard role: admin biasa tidak boleh pindah jadwal
+  helper('seed-admin-biasa', EMAIL_ADMIN_BIASA)
+  const cBiasa = await loginDev(EMAIL_ADMIN_BIASA)
+  const [idStr] = helper('seed-booking-pending', EMAIL_CUSTOMER, '2026-11-05', '09.00').split(' ')
+  const id = Number(idStr)
+
+  const ditolakBiasa = await req(
+    'PATCH', '/admin/bookings.php',
+    { id, slot_date: ymd(valid), slot_time: '13.00' }, cBiasa,
+  )
+  cek(
+    'admin biasa pindah jadwal → 403',
+    ditolakBiasa.status === 403 && ditolakBiasa.json?.code === 'forbidden',
+    JSON.stringify(ditolakBiasa.json),
+  )
+
+  // Aturan jadwal (issue #17)
+  const keSelasa = await req(
+    'PATCH', '/admin/bookings.php',
+    { id, slot_date: ymd(selasa), slot_time: '09.00' }, sa,
+  )
+  cek(
+    'pindah ke Selasa → 400 hari_selasa',
+    keSelasa.status === 400 && keSelasa.json?.code === 'hari_selasa',
+    JSON.stringify(keSelasa.json),
+  )
+
+  const keLewat = await req(
+    'PATCH', '/admin/bookings.php',
+    { id, slot_date: ymd(hari(-1)), slot_time: '09.00' }, sa,
+  )
+  cek(
+    'pindah ke tanggal lewat → 400 date_invalid',
+    keLewat.status === 400 && keLewat.json?.code === 'date_invalid',
+    JSON.stringify(keLewat.json),
+  )
+
+  const keJauh = await req(
+    'PATCH', '/admin/bookings.php',
+    { id, slot_date: ymd(hari(31)), slot_time: '09.00' }, sa,
+  )
+  cek(
+    'pindah ke H+31 → 400 date_invalid',
+    keJauh.status === 400 && keJauh.json?.code === 'date_invalid',
+    JSON.stringify(keJauh.json),
+  )
+
+  const sukses = await req(
+    'PATCH', '/admin/bookings.php',
+    { id, slot_date: ymd(valid), slot_time: '13.00', reason: 'Uji aturan jadwal' }, sa,
+  )
+  cek(
+    `pindah ke ${ymd(valid)} 13.00 (hari valid) → 200 + slot berubah`,
+    sukses.status === 200 && sukses.json?.data?.ok && sukses.json?.data?.slot_date === ymd(valid),
+    JSON.stringify(sukses.json),
+  )
+
+  helper('hapus-booking', id)
+}
+
 // =============================================================
 
 async function main() {
@@ -357,6 +436,7 @@ async function main() {
   await uji8_slots()
   await uji9_customersPricelist()
   await uji10_reportsLogs()
+  await uji11_pindahJadwalAturan()
 
   console.log(`\n=== HASIL: ${lolos} lolos, ${gagal} gagal ===`)
   process.exit(gagal > 0 ? 1 : 0)
