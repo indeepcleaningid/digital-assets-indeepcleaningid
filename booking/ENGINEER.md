@@ -10,6 +10,42 @@
 
 ## 2026-10-15
 
+### Rate limit IP tepercaya di otp-request, otp-verify & otp-email-request-old (20/menit, key REMOTE_ADDR) — issue #25, PR #35 (PR ini)
+
+- **Apa**: `rate_limit()` dapat parameter opsional `$ip` (default tetap
+  `client_ip()` — endpoint publik tidak berubah); helper baru `trusted_ip()`
+  di `security.php` (hanya `REMOTE_ADDR`, anti XFF spoof); tiga endpoint
+  auth OTP dipasangi limit **20 request / 60 detik / IP**: bucket
+  `auth:otp-request` dipanggil paling atas `otp-request.php`,
+  `auth:otp-verify` paling atas `otp-verify.php`, `auth:otp-email-old`
+  paling atas `otp-email-request-old.php` (semua sebelum validasi/auth —
+  request invalid pun kehitung). Catatan Keterbatasan di README disesuaikan.
+- **Kenapa**: Issue #25 (analisa pentest 14 Okt 2026) — kedua endpoint ini
+  nol rate limit: 250 request beruntun ke otp-verify tanpa satu pun 429, dan
+  8 email beda dari 1 IP semuanya 200 di otp-request (cooldown hanya per
+  email) → pelaku bisa bakar kuota SMTP tanpa batas (OTP asli berhenti
+  diterima pelanggan) + brute-force/DoS ringan. `client_ip()` percaya
+  X-Forwarded-For yang bisa dipalsukan client, jadi bucket auth sengaja
+  di-key `REMOTE_ADDR` — konsisten `admin-login.php`/`login.php`: rotasi
+  XFF tidak membobol limit.
+- **Keputusan**: 20/menit/IP per endpoint (rentang 10–20 sesuai saran
+  issue) — longgar buat NAT kantor & suite uji (butuh 13 request + 9
+  verify per run), tapi memblokir skenario pentest. Limit ditaruh paling
+  atas file (sebelum validasi) supaya semua request dihitung. Keputusan
+  dicatat di PRD Bab 18 (`Credential+plan/PRD-app-indeep.md`, di luar
+  repo & gitignored — file lokal Bang Rob).
+- **Hasil uji (docker lokal)**: suite OTP **21/21**, suite login **19/19**,
+  `php -l` semua file lolos. Hammer: otp-verify 25x → 429 di req #21 +
+  `Retry-After: 60`; otp-request 23x (email & XFF beda tiap req, skenario
+  pentest) → 20x200 lalu `rate_limited` + `Retry-After: 59`; rotasi XFF
+  tetap 429; otp-email-request-old 22x tanpa login (XFF beda tiap req) →
+  20x401 lalu 429 (limit kehitung sebelum auth). 3 kegagalan awal uji8
+  terbukti pre-existing (gagal identik di `main`) — polusi data suite
+  antar run, bukan perubahan ini.
+- **File**: `app/lib/ratelimit.php`, `app/lib/security.php`,
+  `public/api/otp-request.php`, `public/api/otp-verify.php`,
+  `public/api/otp-email-request-old.php`, `README.md`, `ENGINEER.md`.
+
 ### README disinkronkan dengan realita produksi (subdomain, Google aktif, CI mati, build base '/') — PR #34 (PR ini)
 
 - **Apa**: `README.md` diperbaiki di titik-titik yang sudah tidak sesuai kondisi
