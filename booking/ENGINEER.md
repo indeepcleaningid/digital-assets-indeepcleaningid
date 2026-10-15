@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Reschedule admin diikat aturan jadwal create (Selasa/lewat/H+30) + fix underflow `booked-1` — issue #17, PR ini
+### Reschedule admin diikat aturan jadwal create (Selasa/lewat/H+30) + fix underflow `booked-1` — issue #17, PR #37 (PR ini)
 
 - **Apa**: (1) Aturan tanggal jadwal diekstrak jadi fungsi bersama
   `slot_assert_date_rules()` di `app/lib/slots.php` (format, tidak lewat,
