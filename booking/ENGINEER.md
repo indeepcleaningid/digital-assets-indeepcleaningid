@@ -10,6 +10,33 @@
 
 ## 2026-10-15
 
+### Refactor FE (Batch 2): pecah admin/Bookings.jsx — issue #7
+
+- **Apa**: `pages/admin/Bookings.jsx` (**607 baris**) dipecah jadi 1 halaman +
+  3 komponen:
+  - `components/admin/BookingRow.jsx` — satu baris booking, dua tampilan
+    (`variant: 'table' | 'card'`) dalam SATU komponen. `waLink()` dihitung
+    **sekali** per baris (dulu 4×), markup tabel & kartu tak lagi digandakan.
+  - `components/admin/BookingRowActions.jsx` — blok aksi (WA, transisi status,
+    pindah, hapus) yang dulu diduplikasi antara tabel & kartu.
+  - `components/admin/BookingItemsList.jsx` — rincian item + surcharge (dulu copy 2×).
+  - Halaman kini render **satu** tampilan saja lewat `matchMedia('(min-width:1024px)')`
+    → tidak lagi mount tabel DAN kartu sekaligus.
+- **Kenapa**: Issue #7 — `admin/Bookings.jsx` 589 baris, tabel desktop & kartu
+  mobile dua-duanya selalu ter-mount, blok aksi + `waLink()` diduplikasi.
+  Perubahan perilaku dulu harus diedit di 2 tempat → bug "udah difix di tabel,
+  di HP masih salah".
+- **Bukti**: `Bookings.jsx` **607 → 422 baris**; bundle `Bookings` 16.37 → 15.96 kB.
+  Build Vite sukses. Verifikasi sumber **11/11 lolos** (waLink lokal hilang,
+  render kondisional, komponen dipakai). Regresi API: Tahap 2 **17/18**
+  (S2 pre-existing), Admin **33/33**.
+- **File**: `web/src/components/admin/BookingRow.jsx` (baru),
+  `web/src/components/admin/BookingRowActions.jsx` (baru),
+  `web/src/components/admin/BookingItemsList.jsx` (baru),
+  `web/src/pages/admin/Bookings.jsx`, bundle `public/assets/*` + `public/index.html`,
+  `ENGINEER.md`.
+- **Catatan**: Batch 2 dari #7. Sisa: merapikan state `Profil.jsx` (17+ `useState`).
+
 ### Refactor FE (Batch 1): komponen form alamat bersama — issue #7
 
 - **Apa**: form alamat yang dulu ditulis **3×** dengan kontrak & gaya berbeda
