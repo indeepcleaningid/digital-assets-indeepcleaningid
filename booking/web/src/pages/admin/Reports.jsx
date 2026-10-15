@@ -58,7 +58,9 @@ export default function AdminReports() {
     <div>
       <h2 className="mb-4 text-2xl font-extrabold">Laporan Omzet Estimasi</h2>
       <p className="mb-4 text-sm text-gray-600">
-        Omzet final dihitung dari booking berstatus <strong>Selesai</strong>. Hak superadmin.
+        Omzet dihitung dari booking berstatus <strong>Dikonfirmasi</strong>,{' '}
+        <strong>Sedang Dikerjakan</strong>, dan <strong>Selesai</strong> (definisi sama
+        dengan dashboard). Hak superadmin.
       </p>
 
       <form onSubmit={onFilter} className="card mb-4 flex flex-wrap items-end gap-3 p-4">
@@ -77,11 +79,16 @@ export default function AdminReports() {
         <p className="text-gray-600">Memuat…</p>
       ) : (
         <>
-          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="card p-5">
+              <p className="text-sm font-bold text-gray-600">Omzet Estimasi</p>
+              <p className="mt-2 text-3xl font-extrabold">{formatRupiah(data.omzet_estimasi)}</p>
+              <p className="mt-1 text-xs text-gray-500">confirmed → completed</p>
+            </div>
             <div className="card p-5">
               <p className="text-sm font-bold text-gray-600">Omzet Selesai</p>
               <p className="mt-2 text-3xl font-extrabold">{formatRupiah(data.omzet_completed)}</p>
-              <p className="mt-1 text-xs text-gray-500">status completed</p>
+              <p className="mt-1 text-xs text-gray-500">status completed saja</p>
             </div>
             <div className="card p-5">
               <p className="text-sm font-bold text-gray-600">Total Booking (semua status)</p>
@@ -90,7 +97,7 @@ export default function AdminReports() {
             <div className="card p-5">
               <p className="text-sm font-bold text-gray-600">Nilai Semua Status</p>
               <p className="mt-2 text-3xl font-extrabold">{formatRupiah(data.total_omzet_all_status)}</p>
-              <p className="mt-1 text-xs text-gray-500">termasuk batal (bukan omzet final)</p>
+              <p className="mt-1 text-xs text-gray-500">termasuk batal (bukan omzet)</p>
             </div>
           </div>
 
@@ -120,7 +127,7 @@ export default function AdminReports() {
             </div>
 
             <div className="card p-4">
-              <h3 className="mb-3 font-extrabold">Harian (Selesai)</h3>
+              <h3 className="mb-3 font-extrabold">Harian (Omzet)</h3>
               <div className="max-h-80 overflow-y-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 border-b-2 border-black bg-white">
@@ -132,7 +139,7 @@ export default function AdminReports() {
                   </thead>
                   <tbody>
                     {data.daily.length === 0 ? (
-                      <tr><td colSpan={3} className="p-3 text-gray-500">Belum ada booking selesai di rentang ini.</td></tr>
+                      <tr><td colSpan={3} className="p-3 text-gray-500">Belum ada booking beromzet di rentang ini.</td></tr>
                     ) : data.daily.map((d) => (
                       <tr key={d.slot_date} className="border-b border-gray-200 last:border-0">
                         <td className="p-2">{formatDateShort(d.slot_date)}</td>

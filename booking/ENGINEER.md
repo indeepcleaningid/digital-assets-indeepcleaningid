@@ -10,6 +10,32 @@
 
 ## 2026-10-15
 
+### Omzet: definisi tunggal dashboard==reports + panel PRD 12.1 — issue #9
+
+- **Apa**:
+  - `app/lib/omzet.php` (baru) — definisi omzet **tunggal**:
+    `omzet_statuses()` = `confirmed, in_progress, completed`, plus
+    `omzet_status_sql()` & `omzet_sum_between()`. Semua endpoint omzet WAJIB
+    pakai ini (tak ada literal status).
+  - `admin/dashboard.php` & `admin/reports.php` memakai definisi bersama →
+    `dashboard.omzet_today` kini **=** `reports.omzet_estimasi` (dulu dashboard
+    `confirmed+in_progress+completed`, reports `completed` saja → beda).
+  - Panel PRD 12.1 ditambah: **`tomorrow_bookings`** (booking besok) &
+    **`slots_full_week`** (slot penuh Senin–Minggu berjalan) di dashboard.
+  - `Reports.jsx`: tambah kartu "Omzet Estimasi" + keterangan status; tabel
+    harian ikut definisi tunggal. `Dashboard.jsx`: 2 kartu baru.
+- **Kenapa**: Issue #9 — angka omzet dashboard ≠ laporan (keputusan bisnis pakai
+  angka beda tergantung layar); PRD 12.1 belum terpenuhi. Keputusan Bang Rob:
+  omzet = **confirmed + completed** (pending dikecualikan; completed tetap dihitung).
+- **Bukti**: data uji (1 confirmed 100rb + 1 in_progress 200rb + 1 completed 300rb
+  + 1 pending 888rb + 1 cancelled 999rb) → dashboard `omzet_today` **600000** =
+  reports `omzet_estimasi` **600000** (konsisten; pending & cancelled tak dihitung).
+  Suite: Tahap 2 **17/18** (S2 pre-existing), Admin **33/33**, Security **23/23**.
+- **File**: `app/lib/omzet.php` (baru), `public/api/admin/dashboard.php`,
+  `public/api/admin/reports.php`, `web/src/pages/admin/Dashboard.jsx`,
+  `web/src/pages/admin/Reports.jsx`, bundle `public/assets/*` + `public/index.html`,
+  `ENGINEER.md`.
+
 ### UI kit (Batch 2, penutup): Banner tunggal ganti 25 banner manual — issue #8
 
 - **Apa**: komponen `components/Banner.jsx` (variant `error`/`success`/`info`/
