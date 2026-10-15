@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 
 /**
- * Halaman sementara buat ngepet routing.
- * Tiap rute diganti komponen aslinya pas masuk tahap masing-masing.
+ * Halaman 404 — rute yang tidak dikenal.
  */
 export default function Placeholder({ title, desc }) {
   useEffect(() => {
@@ -14,7 +13,6 @@ export default function Placeholder({ title, desc }) {
       <div className="card w-full p-8">
         <h1 className="text-3xl font-extrabold">{title}</h1>
         <p className="mt-3 text-gray-600">{desc}</p>
-        <p className="mt-2 text-sm text-gray-400">Halaman ini menyusul di tahap berikutnya.</p>
       </div>
     </main>
   )

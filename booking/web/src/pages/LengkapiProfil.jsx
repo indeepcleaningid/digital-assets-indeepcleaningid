@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import AddressFields from '../components/AddressFields.jsx'
@@ -65,8 +65,9 @@ export default function LengkapiProfil() {
     return <main className="mx-auto max-w-2xl px-4 py-16 text-center font-bold">Memuat…</main>
   }
   if (!user) {
-    navigate('/login', { replace: true })
-    return null
+    // Guard saat render — pakai <Navigate/> seperti Riwayat.jsx (issue #3),
+    // bukan navigate() di body render (anti double-invoke StrictMode).
+    return <Navigate to="/login" replace />
   }
 
   return (

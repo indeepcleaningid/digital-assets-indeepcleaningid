@@ -10,6 +10,27 @@
 
 ## 2026-10-16
 
+### FE polish: buang dead code + copy dev di 404 (batch 1) — issue #3
+
+- **Apa**:
+  - `web/src/lib/auth.jsx` — gabung dua cabang `catch` yang identik
+    (`setUser(null)` × 2, dulu beda label 401 vs lain) jadi satu; buang import
+    `ApiError` yang kini tak terpakai.
+  - `web/src/pages/Placeholder.jsx` — buang copy dev
+    "Halaman ini menyusul di tahap berikutnya." dari halaman 404 publik +
+    betulkan komen kedaluwarsa ("halaman sementara") → 404 beneran.
+  - `web/src/pages/LengkapiProfil.jsx` — `navigate()` saat render (guard
+    `!user`) diganti `<Navigate to="/login" replace />`, konsisten dengan
+    `Riwayat.jsx`.
+  - Build ulang `public/` (base `/`, WA admin produksi).
+- **Kenapa**: Issue #3 — polish frontend. **Catatan verifikasi**: 4 klaim issue
+  dicek ke kode aktual dan **tidak terbukti** (props `StepSukses`, import api di
+  `StepIdentitas`, `ApiError` di `Riwayat`, `waAdminReady` — semuanya masih
+  dipakai), jadi **tidak disentuh**. Yang dieksekusi hanya 3 yang valid.
+- **Bukti**: `npm run build` sukses; perilaku app tak berubah (cleanup murni).
+- **File**: `web/src/lib/auth.jsx`, `web/src/pages/{Placeholder,LengkapiProfil}.jsx`,
+  `public/` (bundle rebuild), `ENGINEER.md`.
+
 ### Security: blokir nama file repo tanpa ekstensi (LICENSE/dst) — follow-up issue #1
 
 - **Apa**:
