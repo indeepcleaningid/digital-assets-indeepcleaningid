@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
+        error_log('[admin/bookings delete] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
         json_error(500, 'delete_failed', 'Gagal menghapus booking. Coba lagi ya.');
     }
 
@@ -160,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+            error_log('[admin/bookings move] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
             json_error(500, 'move_failed', 'Gagal memindah jadwal. Coba lagi ya.');
         }
 

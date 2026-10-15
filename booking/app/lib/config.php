@@ -6,7 +6,15 @@
 
 declare(strict_types=1);
 
-function config(string $key): mixed
+/**
+ * Ambil nilai config. `$default` dipakai kalau kunci TIDAK ada (issue #4 —
+ * dulu signature cuma 1 param, jadi pemanggil `config($k, '')` menyebabkan
+ * RuntimeException 500 alih-alih memakai fallback).
+ *
+ * `func_num_args() > 1` membedakan "default tidak dikasih" (→ throw kalau kunci
+ * hilang) dari "default dikasih eksplisit, termasuk null".
+ */
+function config(string $key, mixed $default = null): mixed
 {
     static $cfg = null;
 
@@ -21,6 +29,9 @@ function config(string $key): mixed
     }
 
     if (!array_key_exists($key, $cfg)) {
+        if (func_num_args() > 1) {
+            return $default;
+        }
         throw new RuntimeException("Kunci config tidak dikenal: {$key}");
     }
 

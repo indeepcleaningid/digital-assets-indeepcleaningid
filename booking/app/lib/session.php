@@ -38,11 +38,6 @@ function current_user_id(): ?int
     return isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
 }
 
-function current_role(): ?string
-{
-    return isset($_SESSION['role']) ? (string) $_SESSION['role'] : null;
-}
-
 function login_user(int $userId, string $role): void
 {
     session_regenerate_id(true);

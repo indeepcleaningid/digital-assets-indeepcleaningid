@@ -151,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
+        error_log('[admin/customers delete] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
         json_error(500, 'delete_failed', 'Gagal menghapus customer. Coba lagi ya.');
     }
 

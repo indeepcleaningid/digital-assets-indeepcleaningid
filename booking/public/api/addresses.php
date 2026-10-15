@@ -79,6 +79,7 @@ if ($method === 'POST') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
+        error_log('[addresses create] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
         json_error(500, 'server_error', 'Gagal menyimpan alamat. Coba lagi ya.');
     }
 

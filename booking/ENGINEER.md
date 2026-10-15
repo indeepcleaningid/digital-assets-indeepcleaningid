@@ -10,6 +10,36 @@
 
 ## 2026-10-15
 
+### Polish backend (Batch 1): fix config() default, error_log, dead code, 405 guard — issue #4
+
+- **Apa**:
+  - **`config($key, $default)`** — signature kini punya argumen ke-2: kunci tidak
+    ada → balas `$default` kalau dikasih (via `func_num_args() > 1`), else tetap
+    throw. **Bug**: dulu signature cuma 1 param, jadi `security.php` &
+    `google-callback.php` yang memanggil `config($k, fallback)` menyebabkan
+    RuntimeException 500 saat kunci hilang, bukan fallback.
+  - **`error_log` di catch `Throwable`** yang menyembunyikan error: `admin/customers.php`
+    (delete), `admin/bookings.php` (delete + move), `addresses.php` (create) —
+    biar debug produksi tidak buta.
+  - **Dead code**: buang `current_role()` (`session.php`, 0 pemanggilan) &
+    `recompute_profile_complete()` di `me-photo.php` (no-op: foto bukan kriteria
+    `profile_complete`).
+  - **405 guard** di `admin/dashboard.php`, `admin/logs.php`, `admin/reports.php`
+    (dulu tidak cek method).
+- **Kenapa**: Issue #4 — `config()` default diam-diam diabaikan (paling berbahaya);
+  catch tanpa log; dead code; endpoint GET tanpa guard 405.
+- **Bukti**: `config('X','')` → `''`, `config('X',null)` → `null`, tanpa default →
+  tetap throw. 405 guard dengan session admin: `GET=200 / POST=405
+  method_not_allowed` (dashboard/logs/reports). Regresi: Tahap 2 **17/18**
+  (S2 pre-existing), Admin **33/33**, Security **23/23**. `php -l` hijau.
+- **File**: `app/lib/config.php`, `app/lib/session.php`, `public/api/me-photo.php`,
+  `public/api/admin/dashboard.php`, `public/api/admin/logs.php`,
+  `public/api/admin/reports.php`, `public/api/admin/customers.php`,
+  `public/api/admin/bookings.php`, `public/api/addresses.php`, `ENGINEER.md`.
+- **Catatan**: Batch 1 dari #4. Sisa (Batch 2): standardisasi error code/envelope,
+  N+1 (`admin/customers.php`, `bookings-mine.php`), index `audit_logs(action)`,
+  ekstraksi `read_json_body()`/parser tanggal.
+
 ### Omzet: definisi tunggal dashboard==reports + panel PRD 12.1 — issue #9
 
 - **Apa**:

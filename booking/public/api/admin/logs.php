@@ -8,6 +8,11 @@ require __DIR__ . '/../../../app/lib/bootstrap.php';
 require __DIR__ . '/../../../app/lib/session.php';
 
 require_role('admin', 'superadmin');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
+}
+
 $pdo = db();
 
 $page  = max(1, (int) ($_GET['page'] ?? 1));
