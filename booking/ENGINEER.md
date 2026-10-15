@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27 (PR ini)
+### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27, PR #32 (PR ini)
 
 - **Apa**: Tiga lapis penutupan `public/api/login-dev.php` — (1) `public/.htaccess`
   dan `.htaccess` root nge-block file ini dengan `[F,L]` sebelum PHP sempat
