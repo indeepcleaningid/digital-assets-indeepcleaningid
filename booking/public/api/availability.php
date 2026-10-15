@@ -1,6 +1,6 @@
 <?php
 /**
- * GET /api/availability.php?from=&to= — ketersediaan slot 30 hari (PRD Bab 5.4, 5.5, 11, 16.1).
+ * GET /api/availability.php?from=&to= — ketersediaan slot hari ini s/d H+30 (PRD Bab 5.4, 5.5, 11, 16.1).
  *
  * - Selasa selalu libur mutlak (BR01), tanpa baris slot.
  * - GET ini READ-ONLY (issue #12): baris slot yang belum ada disintesis di
@@ -11,7 +11,9 @@
  *   penuh    -> booked >= capacity.
  *   terkunci -> hari H tapi sudah lewat cutoff 7 jam (BR02a, UX date picker).
  *   tersedia -> sisanya.
- * - Window default: hari ini sampai H+29 (total 30 hari, PRD 5.4 maks H+30).
+ * - Window default: hari ini sampai H+30 (inklusif) — SAMA dengan aturan
+ *   create & reschedule (issue #10: dulu create izinkan H+30 tapi di sini
+ *   cuma sampai H+29 → booking H+30 tak pernah tampil di kalender).
  */
 
 require __DIR__ . '/../../app/lib/bootstrap.php';
@@ -50,14 +52,15 @@ function avail_date_or_fail(string $raw, string $fallback): string
 $today = new DateTimeImmutable('now'); // container sudah Asia/Jakarta (WIB)
 
 $from = avail_date_or_fail(trim((string) ($_GET['from'] ?? '')), $today->format('Y-m-d'));
-$to   = avail_date_or_fail(trim((string) ($_GET['to'] ?? '')), (new DateTimeImmutable($today->format('Y-m-d') . ' +29 days'))->format('Y-m-d'));
+$to   = avail_date_or_fail(trim((string) ($_GET['to'] ?? '')), (new DateTimeImmutable($today->format('Y-m-d') . ' +' . MAX_WINDOW_DAYS . ' days'))->format('Y-m-d'));
 
 if ($to < $from) {
     json_error(400, 'bad_request', 'Tanggal selesai tidak boleh sebelum tanggal mulai ya.');
 }
 
-// Clamp maksimal H+30 (rentang 30 hari) — kalender jangan liar (PRD 5.4).
-$maxEnd = new DateTimeImmutable($today->format('Y-m-d') . ' +' . (MAX_WINDOW_DAYS - 1) . ' days');
+// Clamp maksimal H+30 — sama dengan create/reschedule (issue #10), kalender
+// jangan liar (PRD 5.4).
+$maxEnd = new DateTimeImmutable($today->format('Y-m-d') . ' +' . MAX_WINDOW_DAYS . ' days');
 if ($to > $maxEnd->format('Y-m-d')) {
     $to = $maxEnd->format('Y-m-d');
 }

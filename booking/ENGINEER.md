@@ -10,6 +10,26 @@
 
 ## 2026-10-15
 
+### Window booking: samakan semua jalur ke H+30 — issue #10
+
+- **Apa**: aturan window jadwal diseragamkan ke **H+30 inklusif** (keputusan
+  Bang Rob). `availability.php` (default `to`, clamp `$maxEnd`) dan
+  `admin/slots.php` (kalender admin, `ADMIN_MAX_WINDOW_DAYS`) berhenti memakai
+  `- 1` → kini sama persis dengan `bookings-create.php` & reschedule admin.
+  `scripts/uji-tahap2.mjs` dapat Skenario 4b: create H+31 ditolak (`date_invalid`)
+  + availability hari terakhir = H+30.
+- **Kenapa**: Issue #10 — create mengizinkan H+30 tapi availability hanya
+  menghitung H+29: booking H+30 lolos dibuat tapi **tidak pernah tampil** di
+  kalender/date picker → customer bingung, admin tak bisa lihat. Aturan bisnis
+  dikunci H+30 (konsisten dengan pesan error "maksimal 30 hari ke depan" dan
+  rentang kalender).
+- **Bukti**: `GET /availability.php` → `last = H+30` (31 hari termasuk H+0);
+  `?to=H+31` di-clamp ke H+30. Create di H+30 lewat API → **201** lalu
+  dibatalkan bersih. Suite Tahap 2 **17/18** (S2 surcharge = pre-existing #6);
+  Suite Admin Tahap 4 **33/33**.
+- **File**: `public/api/availability.php`, `public/api/admin/slots.php`,
+  `scripts/uji-tahap2.mjs`, `ENGINEER.md`.
+
 ### Slot counter: satu strategi recount + semua write dalam transaksi — issue #11
 
 - **Apa**: `slots.booked` sekarang **selalu** dihitung ulang dari tabel `bookings`
