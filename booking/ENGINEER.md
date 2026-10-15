@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Login customer email + password manual: endpoint `/login.php` + form `Login.jsx` — issue #30, tutup #31 (PR ini)
+### Login customer email + password manual: endpoint `/login.php` + form `Login.jsx` — issue #30, tutup #31, PR #33 (PR ini)
 
 - **Apa**: Dua bagian — (1) endpoint baru `POST /api/login.php`: validasi input,
   rate limit 5 percobaan / 10 menit / IP (tabel `login_attempts`, pola
