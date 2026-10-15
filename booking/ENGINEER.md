@@ -10,7 +10,43 @@
 
 ## 2026-10-15
 
-### Filter admin: hook bersama `useListQuery` — debounce search + abort request stale + hapus double-fetch — issue #14, PR (PR ini)
+### Security: attempt cap OTP di-serialize (transaksi + SELECT … FOR UPDATE) — tutup race #26
+
+- **Apa**: `app/lib/otp.php` — `otp_verify()` ditulis ulang: seluruh
+  baca-cek-tulis dijalankan dalam **SATU transaksi InnoDB**, dengan semua baris
+  OTP aktif (email + purpose) dikunci lebih dulu lewat `SELECT … FOR UPDATE`.
+  `commit()` dipanggil **sebelum** melempar error 400/429 supaya penambahan
+  `attempts` tidak ikut ter-rollback; exception infra → `rollBack()` + rethrow.
+  Snapshot lock (`$lockedRow`) & total attempts dihitung dari baris terkunci /
+  nilai **setelah** UPDATE, bukan snapshot lama (`$aktif[0]['attempts'] + 1`).
+  Dua script uji baru: `scripts/uji-race-otp.php` + `.mjs` (burst invariant) dan
+  `scripts/uji-race-otp-lock.php` + `.mjs` (bukti tingkat lock).
+- **Kenapa**: Issue #26 — attempt cap (5x salah → kunci 15 menit) diperiksa dan
+  di-increment **non-atomik**: cek dari nilai yang dibaca PHP, increment UPDATE
+  terpisah. Request paralel bisa sama-sama lolos gate sebelum counter ter-commit
+  → tebakan yang sampai `password_verify()` bisa melebihi 5. Ini compensating
+  control utama untuk OTP 6 digit, jadi remnya bocor.
+- **Keputusan**: pakai **usulan #1 issue** (`SELECT … FOR UPDATE` dalam
+  transaksi), bukan increment atomik (usulan #2). Alasan: atomik hanya menjamin
+  counter benar, **tidak** mencegah banyak request menjalankan `password_verify()`
+  di jendela yang sama; lock serialisasi menutup sumber masalahnya. Sejalan
+  dengan pola transaksi yang sudah ada (`bookings-create.php`, `ratelimit.php`).
+  Perubahan turunan: acuan total attempts kini `MAX(attempts)` baris aktif —
+  konsisten dengan `otp_assert_not_locked()` yang mengecek `attempts >= max`
+  per-baris (kode lama memakai kode terbaru saja, bagian dari bug-nya).
+- **Bukti**: (a) **Uji tingkat lock** — dua koneksi paralel pada baris otps yang
+  sama: `SELECT` biasa selesai `0.2ms | 0.1ms` (tanpa blocking = celah race),
+  `SELECT … FOR UPDATE` = `0.2ms | 800.4ms` (koneksi kedua ter-serialize).
+  (b) **Uji burst invariant** — 20 proses paralel `otp_verify()` kode salah:
+  `attempts` akhir **tepat 5** (tidak lebih), 15 sisanya diblokir `429`.
+  (c) **Regresi** — suite `uji-otp-tahap3.mjs` **21/21 lolos** setelah state
+  dibersihkan (3 kegagalan awal terbukti polusi state antar-run = issue #38,
+  bukan regresi).
+- **File**: `app/lib/otp.php`, `scripts/uji-race-otp.php` (baru),
+  `scripts/uji-race-otp.mjs` (baru), `scripts/uji-race-otp-lock.php` (baru),
+  `scripts/uji-race-otp-lock.mjs` (baru), `ENGINEER.md`.
+
+### Filter admin: hook bersama `useListQuery` — debounce search + abort request stale + hapus double-fetch — issue #14, PR #41 (merged `7ba9b435`)
 
 - **Apa**: (1) Hook baru `web/src/lib/useListQuery.js` menyatukan pola fetch
   daftar ter-paginasi + filter yang sebelumnya diduplikasi di
