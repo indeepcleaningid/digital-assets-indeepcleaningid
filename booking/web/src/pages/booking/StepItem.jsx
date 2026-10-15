@@ -1,18 +1,6 @@
 import { useMemo, useState } from 'react'
 import { formatRupiah } from '../../lib/format.js'
 
-const CATEGORIES = [
-  'kasur',
-  'dipan',
-  'headboard',
-  'bantal dan guling',
-  'sofa family',
-  'kursi family',
-  'karpet dan gordyn family',
-  'baby stuff',
-  'interior mobil',
-]
-
 /**
  * Langkah 2 — Item (PRD Bab 5.3, 5.6, 5.7):
  * cari + filter kategori + stepper qty + centang surcharge + total realtime.
@@ -33,6 +21,17 @@ export default function StepItem({
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
+
+  // Kategori di-derive dari pricelist API (satu sumber sama Home/Pricelist) —
+  // dulu hardcode 9 kategori di file ini (issue #3), bisa miss kalau SKU baru
+  // nambah kategori. Urutan mengikuti urutan SKU (kelompok PRD Bab 6).
+  const categories = useMemo(() => {
+    const seen = []
+    for (const item of pricelist) {
+      if (!seen.includes(item.category)) seen.push(item.category)
+    }
+    return seen
+  }, [pricelist])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -78,7 +77,7 @@ export default function StepItem({
           aria-label="Filter kategori"
         >
           <option value="">Semua kategori</option>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

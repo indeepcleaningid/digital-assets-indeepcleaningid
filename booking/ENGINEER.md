@@ -10,6 +10,24 @@
 
 ## 2026-10-16
 
+### FE polish: kategori booking di-derive dari pricelist API (batch 3a) — issue #3
+
+- **Apa**:
+  - `web/src/pages/booking/StepItem.jsx` — buang `CATEGORIES` hardcode 9
+    kategori → derive dari `pricelist` (prop, sumber API) pakai `useMemo`
+    (pola sama `Home.jsx`, urut urutan SKU = kelompok PRD Bab 6).
+  - Build ulang `public/` (base `/`, WA produksi).
+- **Kenapa**: Issue #3 — kategori booking hardcode (`StepItem.jsx`) sementara
+  Home/Admin/Pricelist derive dari API. Kategori baru di pricelist (tambah SKU
+  lewat admin) tidak muncul di filter wizard booking. Sekarang satu sumber.
+  **Catatan**: klaim issue nyebut `StepIdentitas` juga hardcode — dicek, **tidak
+  terbukti** (file itu tidak punya daftar kategori), jadi tidak disentuh.
+- **Bukti**: grep `CATEGORIES` → 0 sisa; `npm run build` sukses; filter kategori
+  di `/booking` kini mengikuti isi pricelist (fallback hardcode dihapus — kalau
+  pricelist kosong, kategori kosong tapi item juga kosong, konsisten dgn Home).
+- **File**: `web/src/pages/booking/StepItem.jsx`, `public/` (bundle rebuild),
+  `ENGINEER.md`.
+
 ### FE polish: unifikasi struk — RiwayatDetail pakai StrukBody, strukPdf dari format.js (batch 2) — issue #3
 
 - **Apa**:
