@@ -57,6 +57,20 @@ switch ($action) {
         echo "ok\n";
         break;
 
+    case 'recount-slot':
+        // Recount booked dari source of truth (tabel bookings) — bersihkan
+        // counter orphan antar-run (issue #38; dipakai uji11 pindah jadwal)
+        [$tanggal, $jam] = [$argv[2], $argv[3]];
+        $pdo->prepare(
+            "UPDATE slots s SET booked = (
+                SELECT COUNT(*) FROM bookings b
+                WHERE b.slot_date = s.slot_date AND b.slot_time = s.slot_time
+                  AND b.status IN ('pending','confirmed','in_progress','completed')
+             ) WHERE s.slot_date = ? AND s.slot_time = ?"
+        )->execute([$tanggal, $jam]);
+        echo "ok\n";
+        break;
+
     case 'seed-admin-biasa':
         $email = $argv[2];
         $cek = $pdo->prepare('SELECT id FROM users WHERE email = ?');

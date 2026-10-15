@@ -276,7 +276,7 @@ masih dijalankan manual; lihat [Deployment dan CI/CD](#deployment-dan-cicd).)
 | Login password (19 cek) | `node scripts/uji-login-password.mjs` | login email+password, pesan generik, akun Google-only, rate limit 5/10 menit, audit |
 | OTP (21 cek) | `node scripts/uji-otp-tahap3.mjs` | request/verify/cooldown/lockout OTP buat ganti password & ganti email |
 | Admin API (33 cek) | `node scripts/uji-admin-tahap4.mjs` | login admin, rate limit, dashboard, guard CRUD, pindah jadwal (aturan Selasa/lewat/H+30) |
-| Tahap 2 (12 skenario) | `node scripts/uji-tahap2.mjs` | subtotal, surcharge, minimum order, aturan hari/jam, balapan slot, double-submit |
+| Tahap 2 (16 cek / 9 skenario) | `node scripts/uji-tahap2.mjs` | subtotal, surcharge, minimum order, aturan hari/jam, balapan slot, double-submit, kontrak alamat |
 | Balapan slot (helper) | `php scripts/uji-race-tahap2.php <YYYY-MM-DD> <A\|B>` | dipanggil suite Tahap 2 skenario 7 — 1 menang, 1 ditolak |
 
 > Diketahui: skenario 2 di Tahap 2 (surcharge latex + sofa lebar) **gagal

@@ -359,7 +359,7 @@ function AlamatPanel({ onBerubah }) {
   }
 
   async function onHapus(a) {
-    if (!window.confirm(`Hapus alamat "${a.label}"?`)) return
+    if (!window.confirm(`Hapus alamat "${a.label || 'Alamat'}"?`)) return
     setError('')
     setSuccess('')
     try {
@@ -403,7 +403,7 @@ function AlamatPanel({ onBerubah }) {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-extrabold">
-                  {a.label}{' '}
+                  {a.label || 'Alamat'}{' '}
                   {a.is_default ? (
                     <span className="ml-1 rounded-md border-2 border-black bg-cta px-1.5 py-0.5 text-xs font-extrabold text-brand">
                       Utama
@@ -459,10 +459,9 @@ function AlamatPanel({ onBerubah }) {
             {form === 'baru' ? 'Alamat baru' : 'Edit alamat'}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Label (Rumah/Kantor)" required>
+            <Field label="Label (Rumah/Kantor) — opsional">
               <input
                 type="text"
-                required
                 maxLength={40}
                 value={isi.label}
                 onChange={(e) => ubah('label', e.target.value)}
@@ -474,7 +473,7 @@ function AlamatPanel({ onBerubah }) {
               <input
                 type="text"
                 required
-                maxLength={255}
+                maxLength={190}
                 value={isi.street_no}
                 onChange={(e) => ubah('street_no', e.target.value)}
                 className="input-brutal"
@@ -521,10 +520,9 @@ function AlamatPanel({ onBerubah }) {
                 className="input-brutal"
               />
             </Field>
-            <Field label="Kode pos" required>
+            <Field label="Kode pos — opsional (5 angka kalau diisi)">
               <input
                 type="text"
-                required
                 pattern="\d{5}"
                 value={isi.postal}
                 onChange={(e) => ubah('postal', e.target.value)}

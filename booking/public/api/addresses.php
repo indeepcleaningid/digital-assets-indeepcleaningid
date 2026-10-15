@@ -12,64 +12,11 @@
 require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/session.php';
 require __DIR__ . '/../../app/lib/audit.php';
+require __DIR__ . '/../../app/lib/address.php';
 
 $user = require_login();
 $userId = (int) $user['id'];
 $method = $_SERVER['REQUEST_METHOD'];
-
-function address_validate(array $body, bool $isCreate): array
-{
-    $label      = trim((string) ($body['label'] ?? ''));
-    $streetNo   = trim((string) ($body['street_no'] ?? ''));
-    $village    = trim((string) ($body['village'] ?? ''));
-    $district   = trim((string) ($body['district'] ?? ''));
-    $city       = trim((string) ($body['city'] ?? ''));
-    $province   = trim((string) ($body['province'] ?? ''));
-    $postal     = trim((string) ($body['postal'] ?? ''));
-    $note       = trim((string) ($body['note'] ?? ''));
-    $mapsUrl    = trim((string) ($body['maps_url'] ?? ''));
-
-    if ($label === '' || mb_strlen($label) > 40) {
-        json_error(400, 'address_invalid', 'Label alamat wajib diisi, maksimal 40 karakter ya.');
-    }
-    if ($streetNo === '' || mb_strlen($streetNo) > 255) {
-        json_error(400, 'address_invalid', 'Nama jalan dan nomor wajib diisi ya.');
-    }
-    if ($village === '' || mb_strlen($village) > 100) {
-        json_error(400, 'address_invalid', 'Kelurahan/desa wajib diisi ya.');
-    }
-    if ($district === '' || mb_strlen($district) > 100) {
-        json_error(400, 'address_invalid', 'Kecamatan wajib diisi ya.');
-    }
-    if ($city === '' || mb_strlen($city) > 100) {
-        json_error(400, 'address_invalid', 'Kota wajib diisi ya.');
-    }
-    if ($province === '' || mb_strlen($province) > 100) {
-        json_error(400, 'address_invalid', 'Provinsi wajib diisi ya.');
-    }
-    if (!preg_match('/^\d{5}$/', $postal)) {
-        json_error(400, 'address_invalid', 'Kode pos harus 5 angka ya.');
-    }
-    if ($mapsUrl !== '' && !filter_var($mapsUrl, FILTER_VALIDATE_URL)) {
-        json_error(400, 'address_invalid', 'Link Google Maps tidak valid ya.');
-    }
-    if (mb_strlen($note) > 255) {
-        json_error(400, 'address_invalid', 'Catatan maksimal 255 karakter ya.');
-    }
-
-    return [
-        'label'      => $label,
-        'street_no'  => $streetNo,
-        'village'    => $village,
-        'district'   => $district,
-        'city'       => $city,
-        'province'   => $province,
-        'postal'     => $postal,
-        'note'       => $note !== '' ? $note : null,
-        'maps_url'   => $mapsUrl !== '' ? $mapsUrl : null,
-        'is_default' => !empty($body['is_default']) ? 1 : 0,
-    ];
-}
 
 $raw  = file_get_contents('php://input');
 $body = json_decode($raw ?: '', true);
@@ -102,7 +49,7 @@ if ($method === 'DELETE') {
 
 // --- POST: tambah ---
 if ($method === 'POST') {
-    $data = address_validate($body, true);
+    $data = address_validate($body);
 
     $pdo = db();
     $pdo->beginTransaction();
@@ -174,7 +121,7 @@ if ($method === 'PATCH') {
     }
 
     // Edit field
-    $data = address_validate($body, false);
+    $data = address_validate($body);
     $pdo = db();
 
     if ($data['is_default'] === 1 && (int) $row['is_default'] !== 1) {

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api.js'
 
+// Kontrak field resmi = snake_case (issue #16 — diseragamkan dengan profil)
 const EMPTY_ADDRESS = {
   label: '',
-  streetNo: '',
+  street_no: '',
   village: '',
   district: '',
   city: '',
   province: '',
   postal: '',
   note: '',
-  mapsUrl: '',
+  maps_url: '',
 }
 
 /**
@@ -52,7 +53,7 @@ export default function StepIdentitas({
     if (!phonePrimary.trim()) return 'Nomor WhatsApp utama wajib diisi buat koordinasi teknisi ya.'
     if (showForm || newAddress) {
       const a = newAddress || form
-      if (!a.streetNo.trim() || !a.village.trim() || !a.district.trim() || !a.city.trim() || !a.province.trim()) {
+      if (!a.street_no.trim() || !a.village.trim() || !a.district.trim() || !a.city.trim() || !a.province.trim()) {
         return 'Alamat belum lengkap. Isi nomor rumah, kelurahan, kecamatan, kota, dan provinsi ya.'
       }
     }
@@ -226,7 +227,7 @@ export default function StepIdentitas({
               value={form.label}
               onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="Rumah, Kantor, dll"
-              maxLength={50}
+              maxLength={40}
             />
           </div>
           <div>
@@ -236,8 +237,8 @@ export default function StepIdentitas({
             <input
               id="ad-street"
               className={fieldClass}
-              value={form.streetNo}
-              onChange={(e) => setForm({ ...form, streetNo: e.target.value })}
+              value={form.street_no}
+              onChange={(e) => setForm({ ...form, street_no: e.target.value })}
               placeholder="Jl Mawar 2 No 45 RT 03 RW 07"
             />
           </div>
@@ -306,8 +307,8 @@ export default function StepIdentitas({
               <input
                 id="ad-maps"
                 className={fieldClass}
-                value={form.mapsUrl}
-                onChange={(e) => setForm({ ...form, mapsUrl: e.target.value })}
+              value={form.maps_url}
+              onChange={(e) => setForm({ ...form, maps_url: e.target.value })}
                 placeholder="https://maps.app.goo.gl/…"
               />
             </div>
@@ -343,7 +344,7 @@ export default function StepIdentitas({
         <div className="mb-4 rounded-xl border-2 border-ink bg-success/40 p-3 text-sm">
           <span className="font-bold">Alamat baru (akan disimpan):</span>
           <br />
-          {newAddress.streetNo}, Kel. {newAddress.village}, Kec. {newAddress.district},{' '}
+          {newAddress.street_no}, Kel. {newAddress.village}, Kec. {newAddress.district},{' '}
           {newAddress.city}, {newAddress.province}
           {newAddress.postal ? ` ${newAddress.postal}` : ''}
           <br />

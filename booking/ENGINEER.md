@@ -10,7 +10,48 @@
 
 ## 2026-10-15
 
-### Reschedule admin diikat aturan jadwal create (Selasa/lewat/H+30) + fix underflow `booked-1` — issue #17, PR #37 (PR ini)
+### Validasi alamat disatukan: `address_validate` tunggal + label/postal opsional — issue #16, PR #39 (PR ini)
+
+- **Apa**: (1) Fungsi validasi tunggal baru `app/lib/address.php`
+  — `address_validate()` dipakai `addresses.php` (profil) DAN
+  `bookings-create.php` (wizard); kontrak resmi **snake_case**, camelCase
+  (`streetNo`/`mapsUrl`) masih diterima supaya bundle FE lama yang ke-cache
+  tidak patah saat deploy. (2) Aturan diseragamkan ke versi longgar-waras:
+  wajib jalan/kelurahan/kecamatan/kota/provinsi; **label opsional** ≤40;
+  **postal opsional** tapi wajib 5 angka kalau diisi; `street_no` ≤190
+  (sesuai kolom DB — dulu validator izinkan 255, bisa mentok strict mode).
+  (3) FE: form alamat Profil label+postal jadi opsional + display fallback
+  `a.label || 'Alamat'`; wizard `StepIdentitas` pindah ke kunci snake_case;
+  `LengkapiProfil` maxLength street 190. (4) Suite tahap 2 +Skenario 9
+  (4 cek kontrak alamat, termasuk **PATCH tanpa label/postal = bug kuncinya**);
+  suite admin uji11 jadi self-healing via helper `recount-slot` (target
+  pindah jadwal di-recount dari tabel bookings di awal uji — anti orphan
+  counter antar-run, kelas issue #38). (5) README + bundle FE disinkronkan.
+- **Kenapa**: Issue #16 — DUA aturan validasi untuk entitas yang sama:
+  profil mewajibkan label ≤40 + postal 5 digit, wizard tidak pernah
+  mengisinya. Alamat hasil booking (label/postal NULL) ditolak saat diedit
+  dari profil → customer terkunci; FE profil bahkan mematikan tombol simpan.
+  Akar masalah form alamat 3 tempat (juga nyambung ke #7).
+- **Keputusan**: (a) aturan menang = **longgar** (label/postal opsional) —
+  kunci matinya dihapus dari akar, bukan ditambal; postal yang diisi tetap
+  divalidasi 5 angka. (b) **Migrasi data existing TIDAK dilakukan** — dengan
+  aturan opsional, baris label/postal NULL lama VALID dan tidak terkunci;
+  cukup display fallback di FE (rewrite data produksi tidak sepadan dengan
+  risikonya). (c) komponen FE `AlamatForm` reusable = cakupan issue #7
+  (god components), tidak dikerjakan di sini.
+- **Hasil uji (docker lokal)**: `php -l` lolos; tahap 2 **15/16** (S2
+  pre-existing #6; Skenario 9: POST tanpa label+postal 200, PATCH tanpa
+  label+postal 200 = bug kuncinya, postal "12" → 400, tanpa kelurahan →
+  400); suite admin **33/33 dua kali beruntun** (uji11 self-healing);
+  suite login **19/19**; kontrak camelCase lama tetap diteruji lewat S1/S8.
+- **File**: `app/lib/address.php` (baru), `public/api/addresses.php`,
+  `public/api/bookings-create.php`, `web/src/pages/Profil.jsx`,
+  `web/src/pages/booking/StepIdentitas.jsx`, `web/src/pages/LengkapiProfil.jsx`,
+  `scripts/uji-tahap2.mjs`, `scripts/uji-admin-tahap4.mjs`,
+  `scripts/uji-admin-helper.php`, `public/index.html` + `public/assets/*`
+  (build), `README.md`, `ENGINEER.md`.
+
+### Reschedule admin diikat aturan jadwal create (Selasa/lewat/H+30) + fix underflow `booked-1` — issue #17, PR #37 (merged `f0845ab`)
 
 - **Apa**: (1) Aturan tanggal jadwal diekstrak jadi fungsi bersama
   `slot_assert_date_rules()` di `app/lib/slots.php` (format, tidak lewat,
