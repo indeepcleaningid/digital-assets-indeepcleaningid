@@ -10,6 +10,28 @@
 
 ## 2026-10-15
 
+### Security retest: attempt cap OTP, IDOR horizontal/vertical, mass assignment, idempotency lintas user — issue #29
+
+- **Apa**: skrip uji baru `scripts/uji-security-tahap29.mjs` +
+  `scripts/uji-security-helper.php` — menguji 5 vektor lewat **endpoint asli**
+  (bukan unit test): (1) attempt cap OTP pada akun **terdaftar**,
+  (2) IDOR horizontal (booking/addresses/cancel milik user lain),
+  (3) IDOR vertical (customer → `/api/admin/*`), (4) mass assignment
+  `PATCH /me.php`, (5) `bookings-create` — reuse `idempotencyKey` lintas user +
+  kepemilikan `skuId`/surcharge.
+- **Kenapa**: Issue #29 — laporan pentest sebelumnya tidak valid: 250 request
+  brute-force memakai email **tidak terdaftar** (berhenti di gate "user tidak
+  ditemukan" sebelum `otp_verify()`), dan surface ter-autentikasi belum diuji.
+- **Hasil (23/23 lolos)**: attempt cap akun terdaftar `400,400,400,400,429`
+  (kunci); IDOR horizontal semuanya **404**; IDOR vertical **403**; mass
+  assignment diabaikan (`role`/`id`/`email`/`password_hash` tetap, field sah
+  diterapkan); `idempotencyKey` lintas user **409 double_submit**; `skuId` asing
+  **400 sku_invalid**; surcharge asing ditolak.
+- **Catatan**: tidak ada celah baru ditemukan. Attempt cap, IDOR, mass
+  assignment, dan kepemilikan resource sudah aman seperti dugaan kode.
+- **File**: `scripts/uji-security-tahap29.mjs` (baru),
+  `scripts/uji-security-helper.php` (baru), `ENGINEER.md`.
+
 ### UX frontend: quote gagal jujur, surcharge ×qty, loading/empty/retry, navigasi basename — issue #6
 
 - **Apa**:
