@@ -61,6 +61,27 @@ nama repo dan URL clone.
 
 ---
 
+## 2026-10-15
+
+### SEO website: H1 about.html + meta description + title baby-stuff (issue #20, #21, #22)
+
+**Apa:** Perbaikan SEO on-page di website utama (root).
+
+**Kenapa:** Hasil audit SEO — `about.html` tidak punya tag `<h1>` (Google lemah
+paham topik halaman); meta description `about.html` 170 char (kepotong di hasil
+search); title `services/baby-stuff.html` 71 char (>60, kepotong).
+
+**Yang berubah:**
+- `about.html`: heading hero `Mengapa Indeep Cleaning Ada?` (dulu `<h2>`) →
+  `<h1>Tentang Indeep Cleaning — Jasa Cuci Soft Furniture Jabodetabek</h1>`;
+  meta description dipendekkan 170 → 140 char.
+- `services/baby-stuff.html`: title 71 → 58 char
+  (`Jasa Cuci Baby Stuff Jakarta - Indeep Cleaning | Aman Bayi`).
+
+**File:** `about.html`, `services/baby-stuff.html`
+
+---
+
 ## Format Entry
 
 Copy template di bawah ini untuk entry baru:
