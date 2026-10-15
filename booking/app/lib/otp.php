@@ -95,69 +95,112 @@ function otp_request_send(string $email, string $purpose): array
 /**
  * Verifikasi kode. Kalau cocok → tandai consumed dan balas true.
  * Salah → attempts naik; sampai 5 → kunci 15 menit.
+ *
+ * Anti-race (issue #26): seluruh baca-cek-tulis dijalankan dalam SATU transaksi
+ * InnoDB, dengan semua baris OTP aktif (email + purpose) dikunci dulu lewat
+ * `SELECT … FOR UPDATE`. Request paralel jadi saling antri — maksimal
+ * OTP_MAX_ATTEMPTS percobaan yang benar-benar sampai `password_verify()` per
+ * siklus lock. Commit dilakukan SEBELUM melempar error supaya penambahan
+ * attempts tidak ikut ter-rollback.
  */
 function otp_verify(string $email, string $purpose, string $code): bool
 {
     $email = strtolower(trim($email));
     $pdo = db();
 
-    otp_assert_not_locked($email, $purpose);
-
     if (!preg_match('/^\d{6}$/', $code)) {
         json_error(400, 'otp_invalid', 'Kode harus 6 digit angka ya.');
     }
 
-    // Semua kode aktif (belum dipakai) untuk email + purpose ini.
-    // Keputusan T3-B1: resend bikin kode BARU, kode lama tetap berlaku
-    // sampai expired-nya sendiri — jadi verifikasi mengecek SEMUA.
-    $stmt = $pdo->prepare(
-        'SELECT id, code_hash, expires_at, attempts FROM otps
-         WHERE email = ? AND purpose = ? AND consumed = 0
-         ORDER BY id DESC'
-    );
-    $stmt->execute([$email, $purpose]);
-    $rows = $stmt->fetchAll();
+    $pdo->beginTransaction();
+    try {
+        // Kunci SEMUA baris aktif (belum dipakai) untuk email + purpose ini.
+        // Inilah titik serialisasi: request lain menunggu sampai commit/rollback.
+        // Keputusan T3-B1: resend bikin kode BARU, kode lama tetap berlaku
+        // sampai expired-nya sendiri — jadi verifikasi mengecek SEMUA.
+        $stmt = $pdo->prepare(
+            'SELECT id, code_hash, expires_at, attempts, created_at FROM otps
+             WHERE email = ? AND purpose = ? AND consumed = 0
+             ORDER BY id DESC
+             FOR UPDATE'
+        );
+        $stmt->execute([$email, $purpose]);
+        $rows = $stmt->fetchAll();
 
-    if ($rows === []) {
-        json_error(400, 'otp_not_found', 'Kode tidak ditemukan. Minta kode baru ya.');
-    }
-
-    $now = time();
-    $aktif = [];
-    foreach ($rows as $r) {
-        if (strtotime($r['expires_at']) > $now) {
-            $aktif[] = $r;
+        if ($rows === []) {
+            $pdo->commit();
+            json_error(400, 'otp_not_found', 'Kode tidak ditemukan. Minta kode baru ya.');
         }
-    }
 
-    if ($aktif === []) {
-        json_error(400, 'otp_kedaluwarsa', 'Kode sudah kedaluwarsa. Minta kode baru ya.');
-    }
-
-    // Cek semua kode aktif — yang mana pun yang cocok, lolos.
-    foreach ($aktif as $r) {
-        if (password_verify($code, $r['code_hash'])) {
-            $pdo->prepare('UPDATE otps SET consumed = 1 WHERE id = ?')
-                ->execute([(int) $r['id']]);
-            return true;
+        $now = time();
+        $aktif = [];
+        $lockedRow = null; // baris dengan attempts >= max (acuan lock)
+        foreach ($rows as $r) {
+            if ((int) $r['attempts'] >= OTP_MAX_ATTEMPTS && $lockedRow === null) {
+                $lockedRow = $r;
+            }
+            if (strtotime($r['expires_at']) > $now) {
+                $aktif[] = $r;
+            }
         }
-    }
 
-    // Tidak ada yang cocok — naikkan attempts di semua kode aktif
-    // (biar hitungan percobaan konsisten antar kode).
-    $ids = array_map(static fn ($r) => (int) $r['id'], $aktif);
-    $pdo->prepare(
-        'UPDATE otps SET attempts = attempts + 1 WHERE id IN (' . implode(',', $ids) . ')'
-    )->execute([]);
+        // Cek lock dulu (baris sudah dikunci — nilainya final untuk siklus ini).
+        if ($lockedRow !== null) {
+            $age = time() - strtotime($lockedRow['created_at']);
+            if ($age < OTP_LOCK_MINUTES * 60) {
+                $pdo->commit();
+                json_error(429, 'terlalu_sering', sprintf(
+                    'Terlalu banyak percobaan. Coba lagi dalam %d menit ya.',
+                    OTP_LOCK_MINUTES - intdiv($age, 60)
+                ));
+            }
+        }
 
-    $totalAttempts = (int) $aktif[0]['attempts'] + 1; // terbaru sebagai acuan
-    if ($totalAttempts >= OTP_MAX_ATTEMPTS) {
-        json_error(429, 'terlalu_sering', 'Terlalu banyak percobaan salah. Kode dikunci 15 menit ya.');
+        if ($aktif === []) {
+            $pdo->commit();
+            json_error(400, 'otp_kedaluwarsa', 'Kode sudah kedaluwarsa. Minta kode baru ya.');
+        }
+
+        // Cek semua kode aktif — yang mana pun yang cocok, lolos.
+        foreach ($aktif as $r) {
+            if (password_verify($code, $r['code_hash'])) {
+                $pdo->prepare('UPDATE otps SET consumed = 1 WHERE id = ?')
+                    ->execute([(int) $r['id']]);
+                $pdo->commit();
+                return true;
+            }
+        }
+
+        // Tidak ada yang cocok — naikkan attempts di semua kode aktif
+        // (biar hitungan percobaan konsisten antar kode).
+        $ids = array_map(static fn ($r) => (int) $r['id'], $aktif);
+        $pdo->prepare(
+            'UPDATE otps SET attempts = attempts + 1 WHERE id IN (' . implode(',', $ids) . ')'
+        )->execute([]);
+
+        // Baca nilai SETELAH update (masih dalam transaksi yang sama) — bukan
+        // snapshot lama. Ini yang dulu bikin beberapa request paralel lolos.
+        $sum = $pdo->prepare(
+            'SELECT MAX(attempts) AS m FROM otps WHERE id IN (' . implode(',', $ids) . ')'
+        );
+        $sum->execute();
+        $totalAttempts = (int) ($sum->fetch()['m'] ?? 0);
+
+        $pdo->commit();
+
+        if ($totalAttempts >= OTP_MAX_ATTEMPTS) {
+            json_error(429, 'terlalu_sering', 'Terlalu banyak percobaan salah. Kode dikunci 15 menit ya.');
+        }
+        json_error(400, 'otp_salah', sprintf(
+            'Kode belum cocok. Sisa percobaan %d kali ya.',
+            OTP_MAX_ATTEMPTS - $totalAttempts
+        ));
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
-    json_error(400, 'otp_salah', sprintf(
-        'Kode belum cocok. Sisa percobaan %d kali ya.',
-        OTP_MAX_ATTEMPTS - $totalAttempts
-    ));
 }
 
 /** Lempar error 429 kalau email+purpose sedang terkunci (5x salah <15 menit lalu). */
