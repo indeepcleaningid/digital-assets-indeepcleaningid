@@ -10,7 +10,45 @@
 
 ## 2026-10-15
 
-### Code splitting bundle FE: lazy route + dynamic import jsPDF + vendor chunk — issue #15, PR (PR ini)
+### Filter admin: hook bersama `useListQuery` — debounce search + abort request stale + hapus double-fetch — issue #14, PR (PR ini)
+
+- **Apa**: (1) Hook baru `web/src/lib/useListQuery.js` menyatukan pola fetch
+  daftar ter-paginasi + filter yang sebelumnya diduplikasi di
+  `admin/Bookings.jsx` & `admin/Logs.jsx`. Fitur: debounce per-key (konsep
+  draft vs applied), `AbortController` (abort request lama + abaikan hasil
+  stale), satu jalur fetch, pagination, `apply()`, `reload()`. (2)
+  `admin/Bookings.jsx` — buang state list + `muat()` + `useCallback`;
+  `search` live (debounced 350 ms), filter lain (status/date/jam) ke-apply
+  saat tombol "Terapkan" → satu request (dulu `setPage(1)` + `muat()` =
+  dua request). Semua `await muat()` di aksi tulis → `await reload()`. (3)
+  `admin/Logs.jsx` — pola sama; tanpa tombol Terapkan, jadi semua filter
+  live: `action` (dropdown) langsung, `booking_id` (teks) di-debounce.
+  (4) Pesan error pemuatan daftar dipisah (`listError`) dari error aksi tulis
+  (`error`), keduanya tetap tampil. (5) Bundle FE di-rebuild & di-commit.
+- **Kenapa**: Issue #14 — (a) filter admin memanggil API tiap ketikan tanpa
+  debounce (ketik 10 karakter = 10 request); (b) klik "Terapkan" memicu 2
+  request (1 terbuang); (c) tanpa `AbortController` response lama bisa
+  menimpa yang baru (daftar tak sesuai filter). Sekalian memenuhi usulan
+  issue: "ekstrak helper fetch bersama".
+- **Keputusan desain (Bang Rob — Opsi B)**: `search` live-debounced (enak
+  dipakai, hemat), dropdown/date lewat tombol "Terapkan" (mengumpulkan
+  perubahan → 1 request, bukan N). Logs tanpa tombol → semua live
+  (`booking_id` debounced). Alternatif "semua live" ditolak karena ganti 3
+  dropdown = 3 request (lebih boros dari model lama).
+- **Catatan**: `api.js` **tidak diubah** — sudah meneruskan `...options` ke
+  `fetch`, jadi `signal` AbortController langsung didukung. Kontrak endpoint
+  backend diverifikasi cocok (bookings: `page/limit/status/date_from/date_to/
+  slot_time/search`; logs: `page/limit/action/booking_id`; respons
+  `{data:{data,total,page,totalPages}}`).
+- **Verifikasi**: build sukses (chunk `Bookings` 16.37 KB, `Logs` ikut bundle
+  admin). Endpoint lokal balas envelope benar (401 sebelum login). Uji
+  interaktif dev server (debounce search, tombol Terapkan = 1 request,
+  pagination) dilakukan via `npm run dev`.
+- **File**: `web/src/lib/useListQuery.js` (baru),
+  `web/src/pages/admin/Bookings.jsx`, `web/src/pages/admin/Logs.jsx`,
+  `public/index.html` + `public/assets/*` (build), `ENGINEER.md`.
+
+### Code splitting bundle FE: lazy route + dynamic import jsPDF + vendor chunk — issue #15, PR #40 (merged `0910b074`)
 
 - **Apa**: (1) `web/src/App.jsx` — 20 import halaman statis diubah jadi
   `React.lazy(() => import(...))` dan seluruh `<Routes>` dibungkus

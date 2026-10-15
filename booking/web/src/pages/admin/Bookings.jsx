@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../../lib/api.js'
+import { useListQuery } from '../../lib/useListQuery.js'
 import { formatRupiah, formatDateShort, formatSlotTime, statusBadgeClass, statusLabel } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
 
@@ -91,19 +92,35 @@ export default function AdminBookings() {
   const navigate = useNavigate()
   const isSuper = user?.role === 'superadmin'
 
-  const [rows, setRows] = useState([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
   const [status, setStatus] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [slotTime, setSlotTime] = useState('')
   const [search, setSearch] = useState('')
+
+  // Daftar booking + pagination + filter via hook bersama (issue #14):
+  // `search` live (debounced), filter lain via tombol "Terapkan" (apply).
+  const {
+    rows,
+    total,
+    page,
+    totalPages,
+    loading,
+    error: listError,
+    setPage,
+    apply,
+    reload,
+  } = useListQuery({
+    path: '/admin/bookings.php',
+    params: { status, date_from: dateFrom, date_to: dateTo, slot_time: slotTime, search },
+    pageSize: 20,
+    liveKeys: ['search'],
+  })
+
+  // error/success dipakai untuk pesan aksi tulis (di bawah tabel), terpisah
+  // dari error pemuatan daftar (listError).
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   // dialog aksi: { booking, action }
   const [dialog, setDialog] = useState(null)
@@ -115,41 +132,9 @@ export default function AdminBookings() {
   const [moveError, setMoveError] = useState('')
   const [hapus, setHapus] = useState(null) // booking yang mau dihapus
 
-  const muat = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const qs = new URLSearchParams({ page: String(page), limit: '20' })
-      if (status) qs.set('status', status)
-      if (dateFrom) qs.set('date_from', dateFrom)
-      if (dateTo) qs.set('date_to', dateTo)
-      if (slotTime) qs.set('slot_time', slotTime)
-      if (search) qs.set('search', search)
-      const res = await api(`/admin/bookings.php?${qs}`)
-      setRows(res.data.data)
-      setTotal(res.data.total)
-      setPage(res.data.page)
-      setTotalPages(res.data.totalPages)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat booking.')
-    } finally {
-      setLoading(false)
-    }
-  }, [page, status, dateFrom, dateTo, slotTime, search])
-
   useEffect(() => {
     document.title = 'Booking Admin | App InDeep Booking'
   }, [])
-
-  useEffect(() => {
-    muat()
-  }, [muat])
-
-  function onFilter(e) {
-    e.preventDefault()
-    setPage(1)
-    muat()
-  }
 
   function bukaDialog(booking, action) {
     setDialog({ booking, action })
@@ -178,12 +163,12 @@ export default function AdminBookings() {
       })
       setSuccess(`Booking ${booking.code} → ${statusLabel(action.to)}.`)
       setDialog(null)
-      await muat()
+      await reload()
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('Booking baru diubah orang lain. Daftar dimuat ulang ya.')
         setDialog(null)
-        await muat()
+        await reload()
       } else {
         setError(err instanceof ApiError ? err.message : 'Gagal mengubah status.')
       }
@@ -217,7 +202,7 @@ export default function AdminBookings() {
       })
       setSuccess(`Booking ${move.booking.code} dipindah ke ${move.slot_date} ${move.slot_time}.`)
       setMove(null)
-      await muat()
+      await reload()
     } catch (err) {
       setMoveError(err instanceof ApiError ? err.message : 'Gagal memindah jadwal.')
     } finally {
@@ -234,7 +219,7 @@ export default function AdminBookings() {
       await api(`/admin/bookings.php?id=${hapus.id}`, { method: 'DELETE' })
       setSuccess(`Booking ${hapus.code} dihapus permanen.`)
       setHapus(null)
-      await muat()
+      await reload()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menghapus booking.')
     } finally {
@@ -247,7 +232,7 @@ export default function AdminBookings() {
       <h2 className="mb-4 text-2xl font-extrabold">Semua Booking</h2>
 
       {/* Filter */}
-      <form onSubmit={onFilter} className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <form onSubmit={(e) => { e.preventDefault(); apply() }} className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
         <label className="block text-sm font-bold">
           Status
           <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-brutal mt-1">
@@ -281,8 +266,8 @@ export default function AdminBookings() {
         </div>
       </form>
 
-      {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+      {listError || error ? (
+        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{listError || error}</p>
       ) : null}
       {success ? (
         <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{success}</p>

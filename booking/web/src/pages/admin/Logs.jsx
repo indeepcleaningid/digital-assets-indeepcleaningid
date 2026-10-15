@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { api, ApiError } from '../../lib/api.js'
+import { useEffect, useState } from 'react'
+import { useListQuery } from '../../lib/useListQuery.js'
 
 /**
  * Audit log admin (PRD Bab 11 poin 9, 16.3): siapa, kapan, aksi, dari→ke status, alasan.
@@ -32,41 +32,21 @@ function aksiLabel(a) {
 }
 
 export default function AdminLogs() {
-  const [rows, setRows] = useState([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [action, setAction] = useState('')
   const [bookingId, setBookingId] = useState('')
 
-  const muat = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const qs = new URLSearchParams({ page: String(page), limit: '30' })
-      if (action) qs.set('action', action)
-      if (bookingId) qs.set('booking_id', bookingId)
-      const res = await api(`/admin/logs.php?${qs}`)
-      setRows(res.data.data)
-      setTotal(res.data.total)
-      setPage(res.data.page)
-      setTotalPages(res.data.totalPages)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat log.')
-    } finally {
-      setLoading(false)
-    }
-  }, [page, action, bookingId])
+  // Logs tidak punya tombol "Terapkan": semua filter auto-apply. `booking_id`
+  // (teks) di-debounce, `action` (dropdown) langsung. Plus abort request lama.
+  const { rows, total, page, totalPages, loading, error, setPage } = useListQuery({
+    path: '/admin/logs.php',
+    params: { action, booking_id: bookingId },
+    pageSize: 30,
+    liveKeys: ['booking_id', 'action'],
+  })
 
   useEffect(() => {
     document.title = 'Audit Log Admin | App InDeep Booking'
   }, [])
-
-  useEffect(() => {
-    muat()
-  }, [muat])
 
   return (
     <div>
@@ -76,7 +56,7 @@ export default function AdminLogs() {
       <div className="card mb-4 flex flex-wrap items-end gap-3 p-4">
         <label className="block text-sm font-bold">
           Aksi
-          <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1) }} className="input-brutal mt-1">
+          <select value={action} onChange={(e) => setAction(e.target.value)} className="input-brutal mt-1">
             {AKSI_LIST.map((a) => (
               <option key={a} value={a}>{a === '' ? 'Semua' : aksiLabel(a)}</option>
             ))}
@@ -88,7 +68,7 @@ export default function AdminLogs() {
             type="number"
             min="1"
             value={bookingId}
-            onChange={(e) => { setBookingId(e.target.value); setPage(1) }}
+            onChange={(e) => setBookingId(e.target.value)}
             className="input-brutal mt-1 w-36"
             placeholder="semua"
           />
