@@ -23,6 +23,12 @@
     # Kalau ada folder app/ atau config/ ke-salin ke public_html, block total
     RewriteRule ^(app|config|scripts|storage|tests)/ - [F,L]
 
+    # Backdoor login-dev ditutup total di produksi (issue #27). Gate di dalam
+    # PHP-nya sendiri berbasis config yang bisa salah ketik — gate web server
+    # ini gak baca config sama sekali. Dev lokal aman: php -S tidak membaca
+    # file .htaccess, jadi suite uji tetap jalan.
+    RewriteRule ^api/login-dev\.php$ - [F,L]
+
     # --- SPA fallback React Router (Hostinger: booking.indeepcleaningid.site) ---
     # Request ke file yang gak ada (mis. /pricelist) → index.html,
     # biar routing React yang ambil alih. API, uploads, & file asli (css/js/gambar)

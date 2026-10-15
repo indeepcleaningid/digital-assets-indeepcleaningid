@@ -8,6 +8,31 @@
 
 ---
 
+## 2026-10-15
+
+### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27, PR #32 (PR ini)
+
+- **Apa**: Tiga lapis penutupan `public/api/login-dev.php` — (1) `public/.htaccess`
+  dan `.htaccess` root nge-block file ini dengan `[F,L]` sebelum PHP sempat
+  jalan; (2) gate di PHP diperkuat jadi dobel: wajib `APP_URL` lokal **dan**
+  `PHP_SAPI === 'cli-server'` (server `php -S` Docker lokal — Apache/LiteSpeed
+  produksi gak mungkin punya SAPI ini); (3) `audit_log()` dipanggil tiap
+  endpoint dipanggil (`login_dev_blocked` saat gate menahan, `login_dev`
+  saat login lokal lolos).
+- **Kenapa**: Issue #27 (hasil analisa pentest) — endpoint auto-provision akun
+  (INSERT `role='customer'` + session tanpa bukti apa pun) ikut ter-deploy ke
+  produksi dan gate tunggalnya cuma string `APP_URL`, jadi sekali config
+  salah ketik backdoor nyala **senyap**. Usulan "exclude dari artefak deploy"
+  gak bisa: Hostinger auto-deploy gak punya mekanisme exclude ("files
+  committed to the repo are the files served"), jadi diganti gate di web
+  server yang gak baca config sama sekali. Gate SAPI menggantikan usulan flag
+  `DEV_LOGIN_ENABLED` — tanpa config key sama sekali (gak ada risiko
+  `config()` lempar error karena kunci gak dikenal), dan gak perlu ngoprek
+  config server. Dev lokal + suite uji tetap jalan: `php -S` gak baca
+  `.htaccess`, dan SAPI-nya `cli-server`.
+- **File**: `public/api/login-dev.php`, `public/.htaccess`, `.htaccess`,
+  `ENGINEER.md`.
+
 ## 2026-10-13
 
 ### Persiapan flip public: README top-matter, LICENSE, CONTRIBUTING — PR #21 (PR ini)
