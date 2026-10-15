@@ -13,6 +13,8 @@ export default function StepReview({
   surChecked,
   surcharges,
   quote,
+  quoteError,
+  onRetryQuote,
   date,
   time,
   newAddress,
@@ -107,12 +109,24 @@ export default function StepReview({
           <>
             <h4 className="mt-3 font-bold">Biaya tambahan</h4>
             <ul className="divide-y divide-gray-100">
-              {surLines.map((sc) => (
-                <li key={sc.code} className="flex justify-between gap-3 py-2 text-sm">
-                  <span>{sc.title}</span>
-                  <span className="font-bold">{formatRupiah(sc.amount)}</span>
-                </li>
-              ))}
+              {surLines.map((sc) => {
+                // Baris WAJIB ikut qty (per-seat): satuan × qtyAffected = lineTotal.
+                // Dulu cuma tampil `amount` satuan → beda dengan total di bawah (issue #6).
+                const qty = surChecked[sc.code] || 1
+                const lineTotal = sc.amount * qty
+                return (
+                  <li key={sc.code} className="flex justify-between gap-3 py-2 text-sm">
+                    <span>
+                      {sc.title}
+                      {qty > 1 ? ` × ${qty} ` : ' '}
+                      <span className="text-gray-500">
+                        {qty > 1 ? `(${formatRupiah(sc.amount)} / ${sc.per})` : `/ ${sc.per}`}
+                      </span>
+                    </span>
+                    <span className="font-bold">{formatRupiah(lineTotal)}</span>
+                  </li>
+                )
+              })}
             </ul>
           </>
         )}
@@ -137,6 +151,16 @@ export default function StepReview({
               <span>{formatRupiah(quote.total)}</span>
             </div>
           </>
+        ) : quoteError ? (
+          <div role="alert">
+            <p className="font-extrabold text-red-700">Gagal memuat harga.</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Total belum bisa dihitung. Coba lagi sebentar ya.
+            </p>
+            <button type="button" className="btn btn-press mt-2 py-2 text-sm" onClick={onRetryQuote}>
+              Coba lagi
+            </button>
+          </div>
         ) : (
           <p className="font-bold">Menghitung total…</p>
         )}

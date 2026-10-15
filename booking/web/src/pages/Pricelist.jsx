@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { formatRupiah } from '../lib/format.js'
@@ -14,28 +14,23 @@ export default function Pricelist() {
   const [search, setSearch] = useState('')
   const [kategori, setKategori] = useState('')
 
-  useEffect(() => {
-    document.title = 'Pricelist | App InDeep Booking'
+  const muat = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api('/pricelist.php')
+      setRows(res.data)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal memuat pricelist.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    let batal = false
-    setLoading(true)
-    setError('')
-    api('/pricelist.php')
-      .then((res) => {
-        if (!batal) setRows(res.data)
-      })
-      .catch((err) => {
-        if (!batal) setError(err instanceof ApiError ? err.message : 'Gagal memuat pricelist.')
-      })
-      .finally(() => {
-        if (!batal) setLoading(false)
-      })
-    return () => {
-      batal = true
-    }
-  }, [])
+    document.title = 'Pricelist | App InDeep Booking'
+    muat()
+  }, [muat])
 
   const kategoriList = useMemo(() => [...new Set(rows.map((r) => r.category))].sort(), [rows])
 
@@ -104,9 +99,12 @@ export default function Pricelist() {
       </div>
 
       {error ? (
-        <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
-          {error}
-        </p>
+        <div role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+          <p>{error}</p>
+          <button type="button" className="btn btn-press mt-2 py-1.5 text-sm" onClick={muat}>
+            Coba lagi
+          </button>
+        </div>
       ) : null}
 
       {/* --- Tabel (desktop) --- */}

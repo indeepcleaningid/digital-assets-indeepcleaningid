@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../lib/api.js'
 import { formatRupiah } from '../../lib/format.js'
 
@@ -9,22 +9,40 @@ import { formatRupiah } from '../../lib/format.js'
 export default function AdminDashboard() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const muat = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api('/admin/dashboard.php')
+      setData(res.data)
+    } catch (err) {
+      setError(err.message || 'Gagal memuat dashboard.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     document.title = 'Dashboard Admin | App InDeep Booking'
-    api('/admin/dashboard.php')
-      .then((res) => setData(res.data))
-      .catch((err) => setError(err.message))
-  }, [])
+    muat()
+  }, [muat])
 
   if (error) {
     return (
-      <p role="alert" className="rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
-        {error}
-      </p>
+      <div>
+        <h2 className="mb-4 text-2xl font-extrabold">Dashboard</h2>
+        <p role="alert" className="rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+          {error}
+        </p>
+        <button type="button" className="btn btn-press mt-3 py-2 text-sm" onClick={muat}>
+          Coba lagi
+        </button>
+      </div>
     )
   }
-  if (!data) return <p className="text-gray-600">Memuat…</p>
+  if (loading || !data) return <p className="text-gray-600">Memuat…</p>
 
   const cards = [
     { label: 'Booking Hari Ini', value: data.today_bookings, sub: 'aktif (bukan batal)' },

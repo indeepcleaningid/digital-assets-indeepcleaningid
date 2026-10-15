@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import StepIdentitas from './booking/StepIdentitas.jsx'
@@ -18,6 +18,7 @@ const STEPS = ['Identitas', 'Item', 'Jadwal', 'Review', 'Sukses']
 
 export default function Booking() {
   const { user, loading: authLoading, refresh } = useAuth()
+  const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
   const [me, setMe] = useState(null)
@@ -35,6 +36,8 @@ export default function Booking() {
   // Hasil server
   const [quote, setQuote] = useState(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError, setQuoteError] = useState(false)
+  const [quoteNonce, setQuoteNonce] = useState(0) // naikkan untuk memicu ulang quote
   const [created, setCreated] = useState(null) // hasil booking sukses / double submit
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -93,10 +96,12 @@ export default function Booking() {
   useEffect(() => {
     if (itemsArr.length === 0) {
       setQuote(null)
+      setQuoteError(false)
       return
     }
     let alive = true
     setQuoteLoading(true)
+    setQuoteError(false)
     const t = setTimeout(async () => {
       try {
         const res = await api('/quote.php', {
@@ -105,7 +110,13 @@ export default function Booking() {
         })
         if (alive) setQuote(res.data)
       } catch (err) {
-        if (alive) setQuote(null)
+        // Jangan diam: quote gagal = total tidak bisa dipercaya. Setel flag
+        // supaya StepItem/Review menampilkan "gagal memuat harga + coba lagi",
+        // bukan seolah-olah user di bawah minimum order (issue #6).
+        if (alive) {
+          setQuote(null)
+          setQuoteError(true)
+        }
       } finally {
         if (alive) setQuoteLoading(false)
       }
@@ -115,7 +126,7 @@ export default function Booking() {
       clearTimeout(t)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(itemsArr), JSON.stringify(surArr)])
+  }, [JSON.stringify(itemsArr), JSON.stringify(surArr), quoteNonce])
 
   // --- Aksi ---
   // Total seat sofa di keranjang (surcharge per='seat', Opsi B — keputusan Bang Rob)
@@ -290,6 +301,8 @@ export default function Booking() {
           onToggleSurcharge={toggleSurcharge}
           quote={quote}
           quoteLoading={quoteLoading}
+          quoteError={quoteError}
+          onRetryQuote={() => setQuoteNonce((n) => n + 1)}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -312,6 +325,8 @@ export default function Booking() {
           surChecked={surChecked}
           surcharges={surcharges}
           quote={quote}
+          quoteError={quoteError}
+          onRetryQuote={() => setQuoteNonce((n) => n + 1)}
           date={date}
           time={time}
           newAddress={newAddress}
@@ -322,7 +337,28 @@ export default function Booking() {
         />
       )}
       {step === 5 && created && (
-        <StepSukses booking={created} me={me} onNew={() => window.location.assign('/booking')} />
+        <StepSukses
+          booking={created}
+          me={me}
+          onNew={async () => {
+            // Reset state wizard lalu tetap di halaman /booking (basename-aware),
+            // biar "Mulai booking baru" beneran mulai dari nol tanpa full reload (issue #6).
+            setStep(1)
+            setItems({})
+            setSurChecked({})
+            setDate('')
+            setTime('')
+            setCreated(null)
+            setError('')
+            idemKey.current =
+              typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+            const res = await api('/me.php').catch(() => null)
+            if (res) setMe(res.data)
+            navigate('/booking', { replace: true })
+          }}
+        />
       )}
     </main>
   )

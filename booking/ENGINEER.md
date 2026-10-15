@@ -10,6 +10,36 @@
 
 ## 2026-10-15
 
+### UX frontend: quote gagal jujur, surcharge ×qty, loading/empty/retry, navigasi basename — issue #6
+
+- **Apa**:
+  - **Quote gagal tidak lagi diam** (`Booking.jsx`): state baru `quoteError` +
+    `quoteNonce` (retry). `StepItem` & `StepReview` menampilkan "Gagal memuat
+    harga." + tombol **Coba lagi**; tombol lanjut `disabled` selama error —
+    tidak lagi menyesatkan seolah user di bawah minimum order.
+  - **Baris surcharge di Review dikali qty** (`StepReview.jsx`): dulu tampil
+    `amount` satuan (mis. 40.000) padahal total di bawah ×2 (80.000). Kini
+    `lineTotal = amount × qtyAffected` + label "+N × (Rp… / per)".
+  - **Loading/empty/error tidak dead-end**: `Profil.jsx` guard `!user` → `<Navigate to="/login">`
+    (dulu layar kosong) + state loading; `Dashboard.jsx`, `Reports.jsx`,
+    `Pricelist.jsx` dapat tombol **Coba lagi** + state loading eksplisit.
+  - **Navigasi basename-aware**: buang `window.location.assign(...)` di
+    `Booking.jsx`, `StepSukses.jsx`, `Riwayat.jsx` → `useNavigate`. "Mulai
+    booking baru" kini reset state wizard di tempat (bukan full reload).
+- **Kenapa**: Issue #6 — celah UX yang bikin user tersesat/terkunci/misinformasi:
+  quote gagal diam → info "minimum order" salah; baris surcharge tak dikali qty;
+  layar kosong saat sesi habis; error tanpa jalan keluar; navigasi hard-code
+  mengabaikan `VITE_BASENAME`.
+- **Bukti**: build Vite sukses (bundle `public/` di-rebuild). Skrip verifikasi
+  logika sumber + surcharge line total: **23/23 lolos**. Suite API regresi tidak
+  terpengaruh: Tahap 2 **17/18** (S2 pre-existing #6-backend), Admin **33/33**.
+- **File**: `web/src/pages/Booking.jsx`, `web/src/pages/booking/StepItem.jsx`,
+  `web/src/pages/booking/StepReview.jsx`, `web/src/pages/booking/StepSukses.jsx`,
+  `web/src/pages/Profil.jsx`, `web/src/pages/Riwayat.jsx`,
+  `web/src/pages/admin/Dashboard.jsx`, `web/src/pages/admin/Reports.jsx`,
+  `web/src/pages/Pricelist.jsx`, bundle `public/assets/*` + `public/index.html`,
+  `ENGINEER.md`.
+
 ### Window booking: samakan semua jalur ke H+30 — issue #10
 
 - **Apa**: aturan window jadwal diseragamkan ke **H+30 inklusif** (keputusan

@@ -9,10 +9,12 @@ import { formatRupiah, formatDateShort, statusLabel } from '../../lib/format.js'
 export default function AdminReports() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
   const muat = useCallback(async (f, t) => {
+    setLoading(true)
     setError('')
     try {
       const qs = new URLSearchParams()
@@ -24,6 +26,8 @@ export default function AdminReports() {
       setTo(res.data.to)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal memuat laporan.')
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -42,6 +46,9 @@ export default function AdminReports() {
       <div>
         <h2 className="mb-4 text-2xl font-extrabold">Laporan Omzet</h2>
         <p role="alert" className="rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <button type="button" className="btn btn-press mt-3 py-2 text-sm" onClick={() => muat(from, to)}>
+          Coba lagi
+        </button>
       </div>
     )
   }
@@ -65,7 +72,7 @@ export default function AdminReports() {
         <button type="submit" className="btn btn-press">Tampilkan</button>
       </form>
 
-      {!data ? (
+      {loading || !data ? (
         <p className="text-gray-600">Memuat…</p>
       ) : (
         <>
