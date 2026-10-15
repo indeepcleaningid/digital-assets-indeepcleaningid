@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import PasswordInput from '../components/PasswordInput.jsx'
+import AddressFields from '../components/AddressFields.jsx'
+import { EMPTY_ADDRESS, normalizeAddress } from '../lib/addressForm.js'
 
 /**
  * Halaman Profil (PRD Bab 10.3 + 16.2):
@@ -262,30 +264,18 @@ export default function Profil() {
 
 /* ===== Panel alamat (list + tambah + edit + default + hapus) ===== */
 
-const ALAMAT_KOSONG = {
-  label: '',
-  street_no: '',
-  village: '',
-  district: '',
-  city: '',
-  province: '',
-  postal: '',
-  note: '',
-  maps_url: '',
-}
-
 function AlamatPanel({ onBerubah }) {
   const { user } = useAuth()
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [form, setForm] = useState(null) // null = tertutup, 'baru' = tambah, angka id = edit
-  const [isi, setIsi] = useState(ALAMAT_KOSONG)
+  const [isi, setIsi] = useState(EMPTY_ADDRESS)
   const [busy, setBusy] = useState(false)
 
   const alamat = user?.addresses || []
 
   function bukaBaru() {
-    setIsi(ALAMAT_KOSONG)
+    setIsi(EMPTY_ADDRESS)
     setForm('baru')
     setError('')
     setSuccess('')
@@ -293,15 +283,7 @@ function AlamatPanel({ onBerubah }) {
 
   function bukaEdit(a) {
     setIsi({
-      label: a.label || '',
-      street_no: a.street_no || '',
-      village: a.village || '',
-      district: a.district || '',
-      city: a.city || '',
-      province: a.province || '',
-      postal: a.postal || '',
-      note: a.note || '',
-      maps_url: a.maps_url || '',
+      ...normalizeAddress(a),
       is_default: a.is_default,
     })
     setForm(a.id)
@@ -464,109 +446,13 @@ function AlamatPanel({ onBerubah }) {
           <h3 className="mb-3 font-extrabold">
             {form === 'baru' ? 'Alamat baru' : 'Edit alamat'}
           </h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Label (Rumah/Kantor) — opsional">
-              <input
-                type="text"
-                maxLength={40}
-                value={isi.label}
-                onChange={(e) => ubah('label', e.target.value)}
-                className="input-brutal"
-                placeholder="Rumah"
-              />
-            </Field>
-            <Field label="Nama jalan & nomor" required>
-              <input
-                type="text"
-                required
-                maxLength={190}
-                value={isi.street_no}
-                onChange={(e) => ubah('street_no', e.target.value)}
-                className="input-brutal"
-                placeholder="Jl. Melati No. 10"
-              />
-            </Field>
-            <Field label="Kelurahan/desa" required>
-              <input
-                type="text"
-                required
-                maxLength={100}
-                value={isi.village}
-                onChange={(e) => ubah('village', e.target.value)}
-                className="input-brutal"
-              />
-            </Field>
-            <Field label="Kecamatan" required>
-              <input
-                type="text"
-                required
-                maxLength={100}
-                value={isi.district}
-                onChange={(e) => ubah('district', e.target.value)}
-                className="input-brutal"
-              />
-            </Field>
-            <Field label="Kota" required>
-              <input
-                type="text"
-                required
-                maxLength={100}
-                value={isi.city}
-                onChange={(e) => ubah('city', e.target.value)}
-                className="input-brutal"
-              />
-            </Field>
-            <Field label="Provinsi" required>
-              <input
-                type="text"
-                required
-                maxLength={100}
-                value={isi.province}
-                onChange={(e) => ubah('province', e.target.value)}
-                className="input-brutal"
-              />
-            </Field>
-            <Field label="Kode pos — opsional (5 angka kalau diisi)">
-              <input
-                type="text"
-                pattern="\d{5}"
-                value={isi.postal}
-                onChange={(e) => ubah('postal', e.target.value)}
-                className="input-brutal"
-                placeholder="16415"
-              />
-            </Field>
-            <Field label="Link Google Maps (opsional)">
-              <input
-                type="url"
-                value={isi.maps_url}
-                onChange={(e) => ubah('maps_url', e.target.value)}
-                className="input-brutal"
-                placeholder="https://maps.app.goo.gl/…"
-              />
-            </Field>
-            <Field label="Catatan untuk teknisi (opsional)">
-              <input
-                type="text"
-                maxLength={255}
-                value={isi.note}
-                onChange={(e) => ubah('note', e.target.value)}
-                className="input-brutal"
-                placeholder="Patokan: sebelah minimarket"
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={!!isi.is_default}
-                  onChange={(e) => ubah('is_default', e.target.checked)}
-                  className="h-4 w-4 accent-brand"
-                />
-                Jadikan alamat utama
-              </label>
-            </div>
-          </div>
+          <AddressFields
+            value={isi}
+            onChange={ubah}
+            idPrefix="profil-ad"
+            variant="plain"
+            showDefault
+          />
           <div className="mt-4 flex gap-2">
             <button type="submit" disabled={busy} className="btn btn-cta py-2">
               {busy ? 'Menyimpan…' : 'Simpan alamat'}
@@ -877,13 +763,4 @@ function GantiEmail({ email, onBerubah }) {
   )
 }
 
-/* ===== Kecil: label + input ===== */
 
-function Field({ label, required, children }) {
-  return (
-    <label className="block text-sm font-bold">
-      {label} {required ? <span className="text-red-600">*</span> : null}
-      <span className="mt-1 block">{children}</span>
-    </label>
-  )
-}
