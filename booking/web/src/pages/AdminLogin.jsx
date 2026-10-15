@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import PasswordInput from '../components/PasswordInput.jsx'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Login admin khusus username + password, tanpa email (PRD Bab 10.2).
@@ -87,9 +88,9 @@ export default function AdminLogin() {
           </div>
 
           {error ? (
-            <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+            <Banner variant="error" className="mb-4">
               {error}
-            </p>
+            </Banner>
           ) : null}
 
           <button

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../lib/api.js'
 import { formatRupiah } from '../../lib/format.js'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Dashboard admin (PRD Bab 16.3): booking hari ini, pending,
@@ -33,9 +34,7 @@ export default function AdminDashboard() {
     return (
       <div>
         <h2 className="mb-4 text-2xl font-extrabold">Dashboard</h2>
-        <p role="alert" className="rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
-          {error}
-        </p>
+        <Banner variant="error">{error}</Banner>
         <button type="button" className="btn btn-press mt-3 py-2 text-sm" onClick={muat}>
           Coba lagi
         </button>

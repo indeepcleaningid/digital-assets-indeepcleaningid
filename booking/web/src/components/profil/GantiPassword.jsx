@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import PasswordInput from '../PasswordInput.jsx'
+import Banner from '../Banner.jsx'
 
 export default function GantiPassword({ email }) {
   const [fase, setFase] = useState('mintakode') // mintakode | isikode
@@ -67,14 +68,14 @@ export default function GantiPassword({ email }) {
       </p>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="error" className="mb-3">
           {error}
-        </p>
+        </Banner>
       ) : null}
       {sukses ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="success" className="mb-3">
           {sukses}
-        </p>
+        </Banner>
       ) : null}
 
       {fase === 'mintakode' ? (

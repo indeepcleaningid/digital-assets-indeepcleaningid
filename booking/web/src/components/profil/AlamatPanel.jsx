@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import AddressFields from '../AddressFields.jsx'
 import ConfirmDialog from '../ConfirmDialog.jsx'
+import Banner from '../Banner.jsx'
 import { EMPTY_ADDRESS, normalizeAddress } from '../../lib/addressForm.js'
 
 export default function AlamatPanel({ user, onBerubah }) {
@@ -121,14 +122,14 @@ export default function AlamatPanel({ user, onBerubah }) {
       </div>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="error" className="mb-3">
           {error}
-        </p>
+        </Banner>
       ) : null}
       {success ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="success" className="mb-3">
           {success}
-        </p>
+        </Banner>
       ) : null}
 
       {alamat.length === 0 && form === null ? (

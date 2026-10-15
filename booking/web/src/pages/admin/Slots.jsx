@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import Modal from '../../components/Modal.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
+import Banner from '../../components/Banner.jsx'
 import { formatDate, formatSlotTime } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
 
@@ -165,10 +166,10 @@ export default function AdminSlots() {
       </div>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <Banner variant="error" className="mb-3">{error}</Banner>
       ) : null}
       {success ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{success}</p>
+        <Banner variant="success" className="mb-3">{success}</Banner>
       ) : null}
 
       {loading ? (

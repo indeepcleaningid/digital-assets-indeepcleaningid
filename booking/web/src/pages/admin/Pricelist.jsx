@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import { formatRupiah } from '../../lib/format.js'
 import Modal from '../../components/Modal.jsx'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Pricelist admin (PRD Bab 16.3): kelola katalog SKU dari dashboard.
@@ -156,10 +157,10 @@ export default function AdminPricelist() {
       </p>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <Banner variant="error" className="mb-3">{error}</Banner>
       ) : null}
       {success ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{success}</p>
+        <Banner variant="success" className="mb-3">{success}</Banner>
       ) : null}
 
       <div className="card overflow-x-auto p-0">

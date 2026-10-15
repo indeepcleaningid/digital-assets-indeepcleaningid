@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useListQuery } from '../../lib/useListQuery.js'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Audit log admin (PRD Bab 11 poin 9, 16.3): siapa, kapan, aksi, dari→ke status, alasan.
@@ -76,7 +77,7 @@ export default function AdminLogs() {
       </div>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <Banner variant="error" className="mb-3">{error}</Banner>
       ) : null}
 
       <div className="card overflow-x-auto p-0">

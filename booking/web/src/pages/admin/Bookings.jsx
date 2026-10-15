@@ -7,6 +7,7 @@ import { useAuth } from '../../lib/auth.jsx'
 import BookingRow from '../../components/admin/BookingRow.jsx'
 import Modal from '../../components/Modal.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Booking admin (PRD Bab 16.3): tabel + filter + search + pagination server-side.
@@ -237,10 +238,10 @@ export default function AdminBookings() {
       </form>
 
       {listError || error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{listError || error}</p>
+        <Banner variant="error" className="mb-3">{listError || error}</Banner>
       ) : null}
       {success ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{success}</p>
+        <Banner variant="success" className="mb-3">{success}</Banner>
       ) : null}
 
       {/* Daftar booking — render SATU tampilan saja (issue #7 Batch 2) */}
@@ -402,9 +403,7 @@ export default function AdminBookings() {
               Alasan (opsional)
               <input value={move.reason} maxLength={500} onChange={(e) => setMove({ ...move, reason: e.target.value })} className="input-brutal mt-1" placeholder="Contoh: customer minta ganti hari" />
             </label>
-            {moveError ? (
-              <p role="alert" className="mt-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{moveError}</p>
-            ) : null}
+            {moveError ? <Banner variant="error" className="mt-3">{moveError}</Banner> : null}
           </>
         ) : null}
       </Modal>
