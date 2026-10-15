@@ -2,11 +2,14 @@
 /**
  * GET /api/admin/reports.php?from=&to= — laporan omzet estimasi (PRD Bab 16.3).
  * HAK SUPERADMIN — admin biasa ditolak 403.
- * Omzet = SUM(total) booking berstatus completed (D2, tanpa chart).
+ *
+ * Omzet memakai definisi TUNGGAL dari app/lib/omzet.php (issue #9):
+ * confirmed + in_progress + completed — SAMA dengan dashboard.
  */
 
 require __DIR__ . '/../../../app/lib/bootstrap.php';
 require __DIR__ . '/../../../app/lib/session.php';
+require __DIR__ . '/../../../app/lib/omzet.php';
 
 require_role('superadmin');
 $pdo = db();
@@ -57,13 +60,18 @@ foreach ($st->fetchAll() as $r) {
     }
 }
 
-// Harian (hanya completed — omzet estimasi final)
+// Omzet estimasi (definisi TUNGGAL — app/lib/omzet.php): confirmed + in_progress
+// + completed. Ini yang sejalan dengan dashboard (issue #9).
+$omzetEstimasi = omzet_sum_between($pdo, $from, $to);
+
+// Harian (definisi omzet tunggal — biar konsisten dengan kartu omzet)
+[$ph, $statuses] = omzet_status_sql();
 $st = $pdo->prepare(
-    'SELECT slot_date, COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS omzet
-     FROM bookings WHERE slot_date BETWEEN ? AND ? AND status = "completed"
-     GROUP BY slot_date ORDER BY slot_date ASC'
+    "SELECT slot_date, COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS omzet
+     FROM bookings WHERE slot_date BETWEEN ? AND ? AND status IN ($ph)
+     GROUP BY slot_date ORDER BY slot_date ASC"
 );
-$st->execute([$from, $to]);
+$st->execute(array_merge([$from, $to], $statuses));
 $daily = [];
 foreach ($st->fetchAll() as $r) {
     $daily[] = [
@@ -80,5 +88,8 @@ json_response(['data' => [
     'daily' => $daily,
     'total_count' => $allCount,
     'total_omzet_all_status' => $allOmzet,
+    'omzet_estimasi' => $omzetEstimasi,
     'omzet_completed' => $completedOmzet,
+    // status yang menghitung omzet — biar FE bisa memberi keterangan jujur
+    'omzet_statuses' => omzet_statuses(),
 ]]);

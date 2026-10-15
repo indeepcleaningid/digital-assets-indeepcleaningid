@@ -45,8 +45,10 @@ export default function AdminDashboard() {
 
   const cards = [
     { label: 'Booking Hari Ini', value: data.today_bookings, sub: 'aktif (bukan batal)' },
+    { label: 'Booking Besok', value: data.tomorrow_bookings, sub: 'aktif (bukan batal)' },
     { label: 'Menunggu Konfirmasi', value: data.pending_count, sub: 'perlu ditindak' },
     { label: 'Slot Penuh Hari Ini', value: data.slots_full_today, sub: 'pagi + siang' },
+    { label: 'Slot Penuh Minggu Ini', value: data.slots_full_week, sub: 'Senin–Minggu' },
     { label: 'Omzet Estimasi Hari Ini', value: formatRupiah(data.omzet_today), sub: 'confirmed → completed' },
     { label: 'Omzet Estimasi Bulan Ini', value: formatRupiah(data.omzet_month), sub: 'bulan berjalan' },
   ]

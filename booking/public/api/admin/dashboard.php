@@ -1,11 +1,16 @@
 <?php
 /**
- * GET /api/admin/dashboard.php — ringkasan dashboard admin (PRD Bab 16.3).
- * Booking hari ini, jumlah pending, slot penuh, omzet estimasi hari ini + bulan ini.
+ * GET /api/admin/dashboard.php — ringkasan dashboard admin (PRD Bab 16.3, 12.1).
+ * Booking hari ini, jumlah pending, slot penuh, omzet estimasi hari ini + bulan
+ * ini, plus panel PRD 12.1: "booking besok" & "slot penuh minggu ini".
+ *
+ * Omzet memakai definisi TUNGGAL dari app/lib/omzet.php (issue #9) — sama
+ * dengan reports.php.
  */
 
 require __DIR__ . '/../../../app/lib/bootstrap.php';
 require __DIR__ . '/../../../app/lib/session.php';
+require __DIR__ . '/../../../app/lib/omzet.php';
 
 require_role('admin', 'superadmin');
 
@@ -20,6 +25,15 @@ $st = $pdo->prepare(
 $st->execute([$today]);
 $todayBookings = (int) $st->fetchColumn();
 
+// Booking BESOK (PRD 12.1) — aktif, bukan batal/tolak/kedaluwarsa
+$besok = (new DateTimeImmutable($today))->modify('+1 day')->format('Y-m-d');
+$st = $pdo->prepare(
+    "SELECT COUNT(*) FROM bookings
+     WHERE slot_date = ? AND status NOT IN ('cancelled','rejected','expired')"
+);
+$st->execute([$besok]);
+$besokBookings = (int) $st->fetchColumn();
+
 // Menunggu konfirmasi
 $pending = (int) $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn();
 
@@ -28,28 +42,25 @@ $st = $pdo->prepare('SELECT COUNT(*) FROM slots WHERE slot_date = ? AND booked >
 $st->execute([$today]);
 $slotsFull = (int) $st->fetchColumn();
 
-// Omzet estimasi hari ini (status confirmed/in_progress/completed)
-$st = $pdo->prepare(
-    "SELECT COALESCE(SUM(total), 0) FROM bookings
-     WHERE slot_date = ? AND status IN ('confirmed','in_progress','completed')"
-);
-$st->execute([$today]);
-$omzetToday = (int) $st->fetchColumn();
+// Slot penuh MINGGU INI (PRD 12.1) — Senin..Minggu berjalan
+$weekStart = (new DateTimeImmutable('monday this week'))->format('Y-m-d');
+$weekEnd = (new DateTimeImmutable('sunday this week'))->format('Y-m-d');
+$st = $pdo->prepare('SELECT COUNT(*) FROM slots WHERE slot_date BETWEEN ? AND ? AND booked >= capacity');
+$st->execute([$weekStart, $weekEnd]);
+$slotsFullWeek = (int) $st->fetchColumn();
 
-// Omzet estimasi bulan ini (pakai rentang tanggal biar index ramah)
-$monthStart = date('Y-m-01');
-$monthEnd = date('Y-m-t');
-$st = $pdo->prepare(
-    "SELECT COALESCE(SUM(total), 0) FROM bookings
-     WHERE slot_date BETWEEN ? AND ? AND status IN ('confirmed','in_progress','completed')"
-);
-$st->execute([$monthStart, $monthEnd]);
-$omzetMonth = (int) $st->fetchColumn();
+// Omzet estimasi hari ini (definisi tunggal — app/lib/omzet.php)
+$omzetToday = omzet_sum_between($pdo, $today, $today);
+
+// Omzet estimasi bulan ini (rentang biar index ramah)
+$omzetMonth = omzet_sum_between($pdo, date('Y-m-01'), date('Y-m-t'));
 
 json_response(['data' => [
-    'today_bookings'  => $todayBookings,
-    'pending_count'   => $pending,
-    'slots_full_today'=> $slotsFull,
-    'omzet_today'     => $omzetToday,
-    'omzet_month'     => $omzetMonth,
+    'today_bookings'   => $todayBookings,
+    'tomorrow_bookings'=> $besokBookings,
+    'pending_count'    => $pending,
+    'slots_full_today' => $slotsFull,
+    'slots_full_week'  => $slotsFullWeek,
+    'omzet_today'      => $omzetToday,
+    'omzet_month'      => $omzetMonth,
 ]]);
