@@ -10,7 +10,7 @@
 
 ## 2026-10-15
 
-### Validasi alamat disatukan: `address_validate` tunggal + label/postal opsional — issue #16, PR ini
+### Validasi alamat disatukan: `address_validate` tunggal + label/postal opsional — issue #16, PR #39 (PR ini)
 
 - **Apa**: (1) Fungsi validasi tunggal baru `app/lib/address.php`
   — `address_validate()` dipakai `addresses.php` (profil) DAN
