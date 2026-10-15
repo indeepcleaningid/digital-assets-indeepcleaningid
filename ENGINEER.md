@@ -61,6 +61,27 @@ nama repo dan URL clone.
 
 ---
 
+## 2026-10-16
+
+### SEO: OG image 1200×630 di semua halaman (issue #23)
+
+**Apa:** Ganti `og:image`/`twitter:image` di website utama dari `Logo.webp`
+(513×513) ke `assets/img/og-banner.webp` (**1200×630**, standar OG).
+
+**Kenapa:** Sebelumnya semua halaman pakai logo polos sebagai OG image → saat
+di-share di WA/FB/Twitter cuma tampil logo, kurang menarik klik. Sekarang visual
+khusus + dimensi sesuai standar social preview.
+
+**Yang berubah:**
+- Tambah aset `assets/img/og-banner.webp` (1200×630).
+- `og:image` + `twitter:image` → `og-banner.webp` di 13 halaman (index, about,
+  contact, gallery, coverage, pricing-estimator, 404, dan 6 halaman services).
+- `og:image:width`/`height` sudah 1200/630 (konsisten dengan aset).
+
+**File:** `assets/img/og-banner.webp` (baru) + 13 halaman HTML
+
+---
+
 ## 2026-10-15
 
 ### Security: header HSTS di website utama + booking (issue #28)
