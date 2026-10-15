@@ -10,7 +10,40 @@
 
 ## 2026-10-15
 
-### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27, PR #32 (PR ini)
+### Login customer email + password manual: endpoint `/login.php` + form `Login.jsx` — issue #30, tutup #31 (PR ini)
+
+- **Apa**: Dua bagian — (1) endpoint baru `POST /api/login.php`: validasi input,
+  rate limit 5 percobaan / 10 menit / IP (tabel `login_attempts`, pola
+  `admin-login.php`, basis `REMOTE_ADDR`), cari customer by email,
+  `password_verify`, lalu `session_boot()` + `login_user()` (regenerate id) +
+  `audit_log`. (2) form di `Login.jsx` diganti dari email+nama (panggilan
+  `login-dev.php`) jadi **email + password** pakai `PasswordInput`, Google
+  tetap di atas sebagai pintu utama, link "Lupa password?" dipindah ke sebelah
+  field password. Suite uji baru `uji-login-password.mjs` (19 cek) +
+  `uji-login-helper.php`. README (fitur, tabel login, tabel suite, keterbatasan)
+  ikut disinkronkan; bundle `public/` di-rebuild.
+- **Kenapa**: Issue #30 — jalur set/reset password sudah ada tapi tidak ada
+  pintu masuknya, jadi reset password dead end dan customer tanpa Google tidak
+  bisa masuk sama sekali di produksi. Alur ini juga menyelesaikan issue #31
+  (form yang memanggil `login-dev.php` — sekarang 403 di produksi — sudah
+  diganti, jadi `login-dev.php` murni alat dev lokal).
+- **Keputusan produk**: (a) akun yang belum punya password (dibuat via Google)
+  dibalas **409 `password_not_set`** dengan arahan ke Google / "Lupa password"
+  — sadar membocorkan status akun, dipilih demi UX (issue #30); (b) gagal
+  password salah vs email tidak terdaftar tetap **401 identik** (anti
+  enumerasi); (c) rate limit basis `REMOTE_ADDR` (konsisten admin-login,
+  tidak bisa dipalsukan header) — revisi "IP tepercaya" menyusul di #25.
+- **Hasil uji (state DB fresh)**: login password **19/19**, OTP **21/21**,
+  Admin **28/28**, Tahap 2 **11/12** (1 gagal S2 surcharge = pre-existing,
+  sudah dibuktikan gagal juga di `main`).
+- **File**: `public/api/login.php` (baru), `web/src/pages/Login.jsx`,
+  `scripts/uji-login-helper.php` (baru), `scripts/uji-login-password.mjs`
+  (baru), `README.md`, `public/index.html` + `public/assets/*` (hasil build),
+  `ENGINEER.md`.
+
+## 2026-10-15
+
+### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27, PR #32 (merged)
 
 - **Apa**: Tiga lapis penutupan `public/api/login-dev.php` — (1) `public/.htaccess`
   dan `.htaccess` root nge-block file ini dengan `[F,L]` sebelum PHP sempat

@@ -67,8 +67,9 @@ satu dashboard admin yang jujur · local dev nyala dengan satu perintah.
 
 ### Customer
 
-- **Login Google** (OAuth 2.0, implementasi mentah — nol library pihak ketiga),
-  plus fallback login email khusus localhost buat uji coba
+- **Login Google** (OAuth 2.0, implementasi mentah — nol library pihak ketiga)
+  dan **login email + password** manual buat customer yang menyetel password
+  lewat alur "Lupa password" (rate limit 5 percobaan / 10 menit / IP)
 - Pelengkapan profil wajib (nama, WhatsApp utama, alamat terstruktur)
 - **Wizard booking 5 langkah**: identitas → item → jadwal → review → sukses
 - Estimasi harga realtime sambil pilih item (cari + filter kategori di 44 SKU)
@@ -215,7 +216,7 @@ Buka URL yang dicetak Vite (biasanya `http://localhost:5173`).
 | Frontend | `:5173` (otomatis geser ke 5174/5175 kalo penuh) |
 | Backend API | `:5011` (Docker, diproxy Vite sebagai `/api` + `/uploads`) |
 | Login admin | `/admin/login` — username & password dari `SEED_ADMIN_*` di `config/config.php` (isi sendiri — tidak ada default di repo) |
-| Login customer | `/login` — form email dev (otomatis mati di luar localhost) |
+| Login customer | `/login` — tombol Google (pintu utama) + form email & password |
 | Database | Docker `MariaDB 11`, auto-seed 44 SKU + 3 surcharge + admin saat first boot |
 
 Perintah lain:
@@ -236,6 +237,7 @@ sebelum buka PR (CI juga menjalankan `php -l` + build di tiap PR).
 
 | Suite | Perintah | Cakupan |
 |---|---|---|
+| Login password (19 cek) | `node scripts/uji-login-password.mjs` | login email+password, pesan generik, akun Google-only, rate limit 5/10 menit, audit |
 | OTP (21 cek) | `node scripts/uji-otp-tahap3.mjs` | request/verify/cooldown/lockout OTP buat ganti password & ganti email |
 | Admin API (28 cek) | `node scripts/uji-admin-tahap4.mjs` | login admin, rate limit, dashboard, guard CRUD |
 | Balapan slot | `php scripts/uji-race-tahap2.php` | booking paralel → pemenang persis satu |
@@ -357,8 +359,9 @@ setelah deploy (canary origin, login, availability, upload foto).
 
 ## Keterbatasan yang Diketahui dan Roadmap
 
-- **Login customer di production butuh credential Google OAuth** (pending —
-  login email dev sengaja mati di luar localhost)
+- **Login Google di production butuh credential Google OAuth** (pending —
+  selama belum diisi, customer tetap bisa masuk pakai email + password, atau
+  set password dulu lewat "Lupa password")
 - **2 cron jobs hPanel** wajib ada (5 menit expire-bookings, 10 menit
   cleanup-otp)
 - **Password admin wajib diganti** dari default seed saat serah terima
