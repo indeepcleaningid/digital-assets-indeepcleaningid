@@ -1,6 +1,6 @@
 <?php
 /**
- * GET    /api/admin/slots.php?from=&to= — daftar slot 30 hari untuk kalender admin (PRD Bab 16.3).
+ * GET    /api/admin/slots.php?from=&to= — daftar slot hari ini s/d H+30 untuk kalender admin (PRD Bab 16.3).
  * PATCH  /api/admin/slots.php — kunci/buka slot + ubah kapasitas (D1).
  * POST   /api/admin/slots.php — tambah slot manual (superadmin, T7-B2).
  * DELETE /api/admin/slots.php?id= — hapus slot kosong (superadmin, T7-B2).
@@ -223,7 +223,7 @@ function admin_date_or_fail(string $raw, string $fallback): string
 $today = (new DateTimeImmutable('today'))->format('Y-m-d');
 $from  = admin_date_or_fail(trim((string) ($_GET['from'] ?? '')), $today);
 $toRaw = trim((string) ($_GET['to'] ?? ''));
-$maxTo = (new DateTimeImmutable($today))->modify('+' . (ADMIN_MAX_WINDOW_DAYS - 1) . ' days')->format('Y-m-d');
+$maxTo = (new DateTimeImmutable($today))->modify('+' . ADMIN_MAX_WINDOW_DAYS . ' days')->format('Y-m-d');
 $to = admin_date_or_fail($toRaw, $maxTo);
 if ($to > $maxTo) {
     $to = $maxTo;

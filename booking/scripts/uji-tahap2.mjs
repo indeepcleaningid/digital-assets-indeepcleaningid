@@ -204,6 +204,32 @@ async function main() {
     check('S4 booking tanggal Selasa ditolak 400', c.status === 400 && c.data?.code === 'hari_selasa', `HTTP ${c.status} ${c.data?.code} (${selasa})`)
   }
 
+  // ---------- SKENARIO 4b: Window H+30 konsisten (issue #10) ----------
+  console.log('Skenario 4b — Window booking konsisten H+30 (issue #10)')
+  {
+    const h30 = todayWib(30)
+    const h31 = todayWib(31)
+
+    // H+31 ditolak di create
+    const c31 = await req('/bookings-create.php', {
+      method: 'POST',
+      body: {
+        items: [{ skuId: 3, qty: 1 }],
+        date: h31,
+        time: '09.00',
+        idempotencyKey: idem(),
+        ...(addressId ? { addressId } : { address: newAddr }),
+      },
+    })
+    check('S4b1 create H+31 ditolak 400 date_invalid', c31.status === 400 && c31.data?.code === 'date_invalid', `HTTP ${c31.status} ${c31.data?.code} (${h31})`)
+
+    // H+30 SUDAH tampil di availability (dulu cuma sampai H+29)
+    const av = await req('/availability.php')
+    const days = av.data?.data?.days || []
+    const last = days[days.length - 1]?.date
+    check('S4b2 availability mencakup H+30 (hari terakhir = H+30)', last === h30, `last=${last} harap=${h30} total=${days.length}`)
+  }
+
   // ---------- SKENARIO 5: Jam ngawur ----------
   console.log('Skenario 5 — Jam selain 09.00/13.00 ditolak (BR02)')
   {
