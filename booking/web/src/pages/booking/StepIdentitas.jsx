@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api } from '../../lib/api.js'
-
-// Kontrak field resmi = snake_case (issue #16 — diseragamkan dengan profil)
-const EMPTY_ADDRESS = {
-  label: '',
-  street_no: '',
-  village: '',
-  district: '',
-  city: '',
-  province: '',
-  postal: '',
-  note: '',
-  maps_url: '',
-}
+import AddressFields from '../../components/AddressFields.jsx'
+import { EMPTY_ADDRESS, validateAddress } from '../../lib/addressForm.js'
 
 /**
  * Langkah 1 — Identitas (PRD Bab 9.2, FR C01, C02):
@@ -52,10 +40,8 @@ export default function StepIdentitas({
     if (name.trim().length < 3) return 'Nama lengkap wajib diisi minimal 3 huruf ya.'
     if (!phonePrimary.trim()) return 'Nomor WhatsApp utama wajib diisi buat koordinasi teknisi ya.'
     if (showForm || newAddress) {
-      const a = newAddress || form
-      if (!a.street_no.trim() || !a.village.trim() || !a.district.trim() || !a.city.trim() || !a.province.trim()) {
-        return 'Alamat belum lengkap. Isi nomor rumah, kelurahan, kecamatan, kota, dan provinsi ya.'
-      }
+      const err = validateAddress(newAddress || form)
+      if (err) return err
     }
     if (!newAddress && selectedAddressId == null && addresses.length > 0) {
       return 'Pilih salah satu alamat dulu ya.'
@@ -217,115 +203,12 @@ export default function StepIdentitas({
 
       {showForm && (
         <div className="mb-4 space-y-3 rounded-xl border-2 border-dashed border-ink p-4">
-          <div>
-            <label htmlFor="ad-label" className="mb-1 block font-bold">
-              Label alamat <span className="font-normal text-gray-500">(opsional)</span>
-            </label>
-            <input
-              id="ad-label"
-              className={fieldClass}
-              value={form.label}
-              onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder="Rumah, Kantor, dll"
-              maxLength={40}
-            />
-          </div>
-          <div>
-            <label htmlFor="ad-street" className="mb-1 block font-bold">
-              Jalan & nomor rumah / patokan <span className="text-red-600">*</span>
-            </label>
-            <input
-              id="ad-street"
-              className={fieldClass}
-              value={form.street_no}
-              onChange={(e) => setForm({ ...form, street_no: e.target.value })}
-              placeholder="Jl Mawar 2 No 45 RT 03 RW 07"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="ad-village" className="mb-1 block font-bold">
-                Kelurahan / desa <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="ad-village"
-                className={fieldClass}
-                value={form.village}
-                onChange={(e) => setForm({ ...form, village: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="ad-district" className="mb-1 block font-bold">
-                Kecamatan <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="ad-district"
-                className={fieldClass}
-                value={form.district}
-                onChange={(e) => setForm({ ...form, district: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="ad-city" className="mb-1 block font-bold">
-                Kota / kabupaten <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="ad-city"
-                className={fieldClass}
-                value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="ad-province" className="mb-1 block font-bold">
-                Provinsi <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="ad-province"
-                className={fieldClass}
-                value={form.province}
-                onChange={(e) => setForm({ ...form, province: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="ad-postal" className="mb-1 block font-bold">
-                Kode pos <span className="font-normal text-gray-500">(opsional)</span>
-              </label>
-              <input
-                id="ad-postal"
-                className={fieldClass}
-                value={form.postal}
-                onChange={(e) => setForm({ ...form, postal: e.target.value })}
-                inputMode="numeric"
-                maxLength={10}
-              />
-            </div>
-            <div>
-              <label htmlFor="ad-maps" className="mb-1 block font-bold">
-                Link maps <span className="font-normal text-gray-500">(opsional)</span>
-              </label>
-              <input
-                id="ad-maps"
-                className={fieldClass}
-              value={form.maps_url}
-              onChange={(e) => setForm({ ...form, maps_url: e.target.value })}
-                placeholder="https://maps.app.goo.gl/…"
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="ad-note" className="mb-1 block font-bold">
-              Catatan alamat <span className="font-normal text-gray-500">(opsional)</span>
-            </label>
-            <input
-              id="ad-note"
-              className={fieldClass}
-              value={form.note}
-              onChange={(e) => setForm({ ...form, note: e.target.value })}
-              placeholder="Pagar hitam sebelah mushola"
-              maxLength={255}
-            />
-          </div>
+          <AddressFields
+            value={form}
+            onChange={(k, val) => setForm((f) => ({ ...f, [k]: val }))}
+            idPrefix="ad"
+            variant="wizard"
+          />
           <button
             type="button"
             className="btn"

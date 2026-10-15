@@ -10,6 +10,37 @@
 
 ## 2026-10-15
 
+### Refactor FE (Batch 1): komponen form alamat bersama — issue #7
+
+- **Apa**: form alamat yang dulu ditulis **3×** dengan kontrak & gaya berbeda
+  kini satu komponen bersama:
+  - `web/src/lib/addressForm.js` — `EMPTY_ADDRESS`, `REQUIRED_ADDRESS_FIELDS`,
+    `validateAddress()`, `normalizeAddress()`, `formatAddressLine()` (satu sumber
+    kontrak snake_case + aturan wajib/semi-validasi).
+  - `web/src/components/AddressFields.jsx` — field alamat controlled
+    (`value`/`onChange`, `idPrefix`, `variant: 'wizard' | 'plain'`,
+    opsi `showLabel/showNote/showMaps/showDefault`).
+  - Dipakai ulang di: `pages/booking/StepIdentitas.jsx` (wizard),
+    `pages/Profil.jsx` (AlamatPanel), `pages/LengkapiProfil.jsx`.
+  - Buang duplikasi: `EMPTY_ADDRESS` & validasi manual di StepIdentitas,
+    `ALAMAT_KOSONG` + helper `Field` lokal di Profil.
+- **Kenapa**: Issue #7 (god components) — form alamat 3× adalah akar dari bug
+  "dua validasi alamat" (#16) dan bikin perubahan perilaku harus diedit di
+  banyak tempat. Profil.jsx 885 baris; bagian ini yang paling aman diekstrak duluan.
+- **Bukti**: build Vite sukses; bundle `Profil` turun **19.26 kB → 16.61 kB**.
+  Skrip verifikasi sumber **27/27 lolos** (kontrak field tetap snake_case,
+  validator & normalizer terpakai di 3 halaman, payload `/addresses.php` tak
+  berubah). Suite API tak terpengaruh: Tahap 2 **17/18**, Admin **33/33**,
+  Security **23/23**.
+- **File**: `web/src/lib/addressForm.js` (baru),
+  `web/src/components/AddressFields.jsx` (baru),
+  `web/src/pages/booking/StepIdentitas.jsx`, `web/src/pages/Profil.jsx`,
+  `web/src/pages/LengkapiProfil.jsx`, bundle `public/assets/*` + `public/index.html`,
+  `ENGINEER.md`.
+- **Catatan**: ini Batch 1 dari #7. Batch lanjutan (belum dikerjakan):
+  `admin/Bookings.jsx` (BookingRowActions + satukan tabel/mobile) dan
+  merapikan sisa state di `Profil.jsx`.
+
 ### Security retest: attempt cap OTP, IDOR horizontal/vertical, mass assignment, idempotency lintas user — issue #29
 
 - **Apa**: skrip uji baru `scripts/uji-security-tahap29.mjs` +
