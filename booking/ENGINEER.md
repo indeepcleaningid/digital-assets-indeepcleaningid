@@ -10,7 +10,34 @@
 
 ## 2026-10-15
 
-### Login customer email + password manual: endpoint `/login.php` + form `Login.jsx` — issue #30, tutup #31, PR #33 (PR ini)
+### README disinkronkan dengan realita produksi (subdomain, Google aktif, CI mati, build base '/') — PR ini
+
+- **Apa**: `README.md` diperbaiki di titik-titik yang sudah tidak sesuai kondisi
+  nyata: (1) repo yang benar `digital-assets-indeepcleaningid` (badge CI &
+  perintah `git clone` lama menunjuk repo `indeep-booking` yang **tidak ada**);
+  (2) alamat produksi = subdomain `booking.indeepcleaningid.site`
+  (`/app-booking/` sudah 404) — termasuk diagram arsitektur, referensi
+  `APP_URL`/`WEB_URL`, redirect URI Google, dan jalur cron; (3) build produksi
+  pakai base `/` — instruksi `VITE_BASE_PATH=/app-booking/` dihapus (kalau
+  diikuti, aset produksi 404); (4) Google OAuth ditandai **aktif** (diverifikasi
+  `302` ke `accounts.google.com` dengan `client_id` terisi), bukan lagi "nunggu
+  credential"; (5) CI ditandai **belum aktif** (workflow ada di
+  `booking/.github/workflows/`, GitHub hanya baca root repo — `gh run list`
+  kosong) di badge, tech stack, bagian deployment, dan tabel integrasi;
+  (6) struktur repo dijelaskan sebagai **monorepo** (website + `booking/`);
+  (7) klaim `app/models/` dihapus (foldernya kosong — issue #13); (8) bagian
+  keamanan ditambah: `login-dev.php` lokal-saja, pengecualian anti-enumerasi
+  `409 password_not_set` yang disengaja, dan catatan rate limit per-IP belum
+  "tepercaya" (issue #25); (9) skenario 2 Tahap 2 ditandai gagal pre-existing.
+- **Kenapa**: README jadi sumber kebingungan — menyuruh build dengan env yang
+  salah dan mendokumentasikan status yang sudah berubah (Google OAuth, CI,
+  URL produksi), padahal repo ini dibuka untuk inspeksi & bakal dipakai tim.
+- **Verifikasi**: semua klaim baru dicek langsung — `404` di path lama, `302`
+  Google di live, hash bundle produksi == hash bundle `main`, `gh run list`
+  kosong, `ls app/models/` kosong, `gh repo view indeep-booking` tidak ada.
+- **File**: `README.md`, `ENGINEER.md`.
+
+### Login customer email + password manual: endpoint `/login.php` + form `Login.jsx` — issue #30, tutup #31, PR #33 (merged `9d4ad1b`)
 
 - **Apa**: Dua bagian — (1) endpoint baru `POST /api/login.php`: validasi input,
   rate limit 5 percobaan / 10 menit / IP (tabel `login_attempts`, pola
@@ -40,8 +67,6 @@
   `scripts/uji-login-helper.php` (baru), `scripts/uji-login-password.mjs`
   (baru), `README.md`, `public/index.html` + `public/assets/*` (hasil build),
   `ENGINEER.md`.
-
-## 2026-10-15
 
 ### Backdoor login-dev ditutup total di produksi: gate .htaccess + gate PHP dobel + audit trail — issue #27, PR #32 (merged)
 
