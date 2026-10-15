@@ -8,12 +8,14 @@
  * PATCH  body: { id, is_locked?: bool, capacity?: int }
  * POST   body: { slot_date, slot_time, capacity? }
  * DELETE     : ?id= atau body { id } — hanya slot booked = 0.
- * Baris slot di-ensure lazily (INSERT IGNORE) seperti availability.php.
+ * Baris slot dipastikan ada lewat helper bersama (slot_ensure_range) supaya
+ * kapasitas default konsisten dengan config, bukan hardcode 1 (issue #12).
  */
 
 require __DIR__ . '/../../../app/lib/bootstrap.php';
 require __DIR__ . '/../../../app/lib/session.php';
 require __DIR__ . '/../../../app/lib/audit.php';
+require __DIR__ . '/../../../app/lib/slots.php';
 
 $user = require_role('admin', 'superadmin');
 $pdo = db();
@@ -191,18 +193,9 @@ if ($to < $from) {
     json_error(400, 'bad_request', 'Tanggal akhir tidak boleh sebelum tanggal awal ya.');
 }
 
-// Ensure baris slot (Selasa libur mutlak — tanpa baris), sama seperti availability
-$cursor = new DateTimeImmutable($from);
-$end = new DateTimeImmutable($to);
-$ins = $pdo->prepare('INSERT IGNORE INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, 1, 0)');
-while ($cursor <= $end) {
-    if ((int) $cursor->format('N') !== 2) { // bukan Selasa
-        foreach (['09.00', '13.00'] as $t) {
-            $ins->execute([$cursor->format('Y-m-d'), $t]);
-        }
-    }
-    $cursor = $cursor->modify('+1 day');
-}
+// Pastikan baris slot ada (kalender admin butuh id buat aksi kunci/kapasitas).
+// Selasa libur mutlak. Kapasitas default dari config lewat helper (issue #12).
+slot_ensure_range($pdo, $from, $to);
 
 $st = $pdo->prepare(
     'SELECT id, slot_date, slot_time, capacity, booked, is_locked

@@ -3,7 +3,9 @@
  * GET /api/availability.php?from=&to= — ketersediaan slot 30 hari (PRD Bab 5.4, 5.5, 11, 16.1).
  *
  * - Selasa selalu libur mutlak (BR01), tanpa baris slot.
- * - Baris slot di-ensure lazily (INSERT IGNORE) saat dibaca — tanpa cron.
+ * - GET ini READ-ONLY (issue #12): baris slot yang belum ada disintesis di
+ *   memori dari kapasitas default, TIDAK menulis DB. Baris asli dibuat saat
+ *   booking/admin terjadi (slot_ensure() di app/lib/slots.php).
  * - Status per slot:
  *   libur    -> Selasa atau dikunci admin (is_locked).
  *   penuh    -> booked >= capacity.
@@ -14,6 +16,7 @@
 
 require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/ratelimit.php';
+require __DIR__ . '/../../app/lib/slots.php';
 
 rate_limit('pub:availability', 120, 60); // 120 hitungan / menit / IP (PRD Bab 18)
 
@@ -59,24 +62,13 @@ if ($to > $maxEnd->format('Y-m-d')) {
     $to = $maxEnd->format('Y-m-d');
 }
 
-$capacity = (int) config('SLOT_CAPACITY_DEFAULT');
-$times = ['09.00', '13.00']; // BR02
+$capacityDefault = (int) config('SLOT_CAPACITY_DEFAULT');
+$times = slot_times(); // BR02 — satu sumber (app/lib/slots.php)
 
-// --- Ensure baris slot non-Selasa dalam window (lazy, anti duplikat via unique key) ---
+// GET publik tidak menulis DB (issue #12). Baris slot yang belum ada cukup
+// disintesis di memori; baris asli dibuat saat booking/admin benar terjadi.
 $pdo = db();
-$ins = $pdo->prepare(
-    'INSERT IGNORE INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, ?, 0)'
-);
-$cur = new DateTimeImmutable($from);
 $curEnd = new DateTimeImmutable($to);
-while ($cur <= $curEnd) {
-    if ((int) $cur->format('N') !== 2) { // 2 = Selasa
-        foreach ($times as $t) {
-            $ins->execute([$cur->format('Y-m-d'), $t, $capacity]);
-        }
-    }
-    $cur = $cur->modify('+1 day');
-}
 
 // --- Ambil baris slot yang ada ---
 $stmt = $pdo->prepare(
@@ -113,16 +105,26 @@ while ($cur <= $curEnd) {
         continue;
     }
 
+    // Baris DB yang ada untuk tanggal ini (kalau belum ada, disintesis)
+    $rowsForDate = [];
+    foreach ($byDate[$date] ?? [] as $r) {
+        $rowsForDate[$r['slot_time']] = $r;
+    }
+
     $slots = [];
     $dateStatus = 'tersedia';
-    foreach ($byDate[$date] ?? [] as $r) {
-        $time = $r['slot_time'];
+    foreach ($times as $time) {
+        $r = $rowsForDate[$time] ?? null;
+        $capacity = $r ? (int) $r['capacity'] : $capacityDefault;
+        $booked   = $r ? (int) $r['booked'] : 0;
+        $locked   = $r ? ((int) $r['is_locked'] === 1) : false;
+
         $timeHour = substr($time, 0, 2);
         $timeMin = substr($time, 3, 2);
 
-        if ((int) $r['is_locked'] === 1) {
+        if ($locked) {
             $status = 'libur';
-        } elseif ((int) $r['booked'] >= (int) $r['capacity']) {
+        } elseif ($booked >= $capacity) {
             $status = 'penuh';
         } elseif ($isToday) {
             // BR02a: cutoff 7 jam sebelum jam cuci — lewat itu slot hari H terkunci.
@@ -140,8 +142,8 @@ while ($cur <= $curEnd) {
         $slots[] = [
             'time'     => $time,
             'status'   => $status,
-            'booked'   => (int) $r['booked'],
-            'capacity' => (int) $r['capacity'],
+            'booked'   => $booked,
+            'capacity' => $capacity,
         ];
     }
 

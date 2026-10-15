@@ -2,6 +2,8 @@
 /**
  * Helper domain slot/jadwal:
  * - sinkronisasi counter slots.booked (bugfix T8-B5 post-E2E)
+ * - pembuatan baris slot tunggal (slot_ensure) — satu-satunya jalur, baca
+ *   SLOT_CAPACITY_DEFAULT (issue #12)
  * - aturan tanggal jadwal bersama: Selasa libur, tidak lewat, maks H+30
  *   (issue #17 — dipakai create customer & reschedule admin)
  *
@@ -52,6 +54,55 @@ function slot_recount_many(PDO $pdo, array $pairs): void
         }
         $seen[$key] = true;
         slot_recount($pdo, (string) $p['slot_date'], (string) $p['slot_time']);
+    }
+}
+
+/**
+ * Jam slot standar (BR02). Satu sumber buat semua jalur — jangan ditulis
+ * ulang sebagai literal di endpoint (issue #12).
+ */
+function slot_times(): array
+{
+    return ['09.00', '13.00'];
+}
+
+/**
+ * Pastikan baris slot (slot_date, slot_time) ada — idempoten, aman balapan
+ * (unique key uq_slots_date_time + INSERT IGNORE). Kapasitas default dibaca
+ * dari config SLOT_CAPACITY_DEFAULT; $capacity hanya diisi kalau pemanggil
+ * punya nilai eksplisit (mis. tambah slot manual superadmin).
+ *
+ * Panggil DALAM transaksi kalau setelah ini barisnya mau langsung dikunci
+ * (`SELECT … FOR UPDATE`). Untuk jalur baca-saja jangan dipakai — GET publik
+ * tidak boleh menulis DB (issue #12).
+ */
+function slot_ensure(PDO $pdo, string $slotDate, string $slotTime, ?int $capacity = null): void
+{
+    $cap = $capacity ?? (int) config('SLOT_CAPACITY_DEFAULT');
+    if ($cap < 1) {
+        $cap = 1;
+    }
+    $pdo->prepare(
+        'INSERT IGNORE INTO slots (slot_date, slot_time, capacity, booked) VALUES (?, ?, ?, 0)'
+    )->execute([$slotDate, $slotTime, $cap]);
+}
+
+/**
+ * Pastikan baris slot untuk semua hari non-Selasa dalam rentang [from, to],
+ * untuk jam standar (09.00 & 13.00). Dipakai kalender admin — butuh id baris
+ * untuk aksi kunci/kapasitas/hapus. Selasa libur mutlak: tanpa baris (BR01).
+ */
+function slot_ensure_range(PDO $pdo, string $from, string $to): void
+{
+    $cur = new DateTimeImmutable($from);
+    $end = new DateTimeImmutable($to);
+    while ($cur <= $end) {
+        if ((int) $cur->format('N') !== 2) { // 2 = Selasa
+            foreach (slot_times() as $t) {
+                slot_ensure($pdo, $cur->format('Y-m-d'), $t);
+            }
+        }
+        $cur = $cur->modify('+1 day');
     }
 }
 

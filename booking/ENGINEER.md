@@ -10,6 +10,30 @@
 
 ## 2026-10-15
 
+### Slot: satu helper ensure + GET publik berhenti menulis DB — issue #12
+
+- **Apa**: `app/lib/slots.php` dapat helper baru `slot_times()`, `slot_ensure()`
+  (INSERT IGNORE idempoten, kapasitas default dari config `SLOT_CAPACITY_DEFAULT`),
+  dan `slot_ensure_range()`. `availability.php` (GET publik) **berhenti menulis
+  DB** — baris slot yang belum ada disintesis di memori dari kapasitas default,
+  respons tetap 2 slot/hari non-Selasa. `admin/slots.php` GET, pindah-slot
+  `admin/bookings.php`, dan `bookings-create.php` memakai helper yang sama
+  (kapasitas konsisten dari config, bukan hardcode 1). `scripts/uji-race-tahap2.php`
+  ikut pakai `slot_ensure()` (urutan ensure-dulu-baru-lock).
+- **Kenapa**: Issue #12 — "ensure baris slot" terduplikasi 3 jalur dengan
+  kapasitas berbeda, dan GET publik `availability.php` menulis puluhan baris tiap
+  request (traffic bot/scanner). Sekaligus menutup bug laten: pola
+  `SELECT … FOR UPDATE` lalu `INSERT` saat baris belum ada bisa **deadlock** (dua
+  gap lock + insert intention saling tunggu) — ketahuan saat suite Tahap 2 S7a
+  dijalankan di DB bersih setelah GET tak lagi membuat baris slot.
+- **Bukti**: DB bersih → `GET /api/availability.php` balas 200 dengan 2 slot/hari,
+  `SELECT COUNT(*) FROM slots` tetap **0** (read-only terbukti). Suite Tahap 2
+  **15/16** (S2 surcharge gagal pre-existing = issue #6) — S7a balapan kini
+  konsisten `1 MENANG + 1 DITOLAK`. Suite Admin Tahap 4 **33/33 lolos**.
+- **File**: `app/lib/slots.php`, `public/api/availability.php`,
+  `public/api/admin/slots.php`, `public/api/admin/bookings.php`,
+  `public/api/bookings-create.php`, `scripts/uji-race-tahap2.php`, `ENGINEER.md`.
+
 ### Security: attempt cap OTP di-serialize (transaksi + SELECT … FOR UPDATE) — tutup race #26
 
 - **Apa**: `app/lib/otp.php` — `otp_verify()` ditulis ulang: seluruh
