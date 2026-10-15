@@ -163,9 +163,9 @@ export default function AdminPricelist() {
         <Banner variant="success" className="mb-3">{success}</Banner>
       ) : null}
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full table-fixed text-left text-base">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               {COLUMNS.map((c) => (
                 <th key={c.key} className={`p-4 ${c.cls || ''}`} aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -288,7 +288,7 @@ export default function AdminPricelist() {
                     disabled={busy}
                     onClick={() => toggleAktif(r)}
                     className={
-                      'rounded-lg border-2 border-black px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
+                      'rounded-lg border-2 border-ink px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
                       (r.is_active ? 'bg-green-200' : 'bg-gray-200')
                     }
                   >
@@ -300,6 +300,35 @@ export default function AdminPricelist() {
           </tbody>
         </table>
       </div>
+
+      {/* Cards mobile (di bawah lg) — read-only + toggle aktif; edit detail
+          (nama/harga/kategori) tetap via tabel desktop (popover inline di sel). */}
+      <ul className="space-y-3 lg:hidden">
+        {loading ? (
+          <li className="card p-4 text-center text-gray-500">Memuat…</li>
+        ) : terlihat.map((r) => (
+          <li key={r.id} className={`card p-4 ${r.is_active ? '' : 'opacity-60'}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-bold">{r.name}</p>
+                <p className="text-sm text-gray-500">{r.sku_id} · {r.size} · {r.unit} · {r.category}</p>
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => toggleAktif(r)}
+                className={
+                  'shrink-0 rounded-lg border-2 border-ink px-3 py-1 text-sm font-extrabold transition-all duration-200 hover:translate-x-px hover:translate-y-px ' +
+                  (r.is_active ? 'bg-green-200' : 'bg-gray-200')
+                }
+              >
+                {r.is_active ? 'Aktif' : 'Nonaktif'}
+              </button>
+            </div>
+            <p className="mt-2 font-bold">{formatRupiah(r.price)}</p>
+          </li>
+        ))}
+      </ul>
 
       <datalist id="kategori-datalist">
         {kategoriList.map((k) => <option key={k} value={k} />)}

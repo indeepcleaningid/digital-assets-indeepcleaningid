@@ -122,9 +122,9 @@ export default function AdminCustomers() {
         <Banner variant="success" className="mb-3">{sukses}</Banner>
       ) : null}
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card hidden overflow-x-auto p-0 lg:block">
         <table className="w-full text-left text-sm">
-          <thead className="border-b-2 border-black bg-paper">
+          <thead className="border-b-2 border-ink bg-paper">
             <tr>
               <th className="p-3 font-extrabold">Nama</th>
               <th className="p-3 font-extrabold">Kontak</th>
@@ -154,14 +154,14 @@ export default function AdminCustomers() {
                     <div className="flex gap-1">
                       <button
                         type="button"
-                        className="rounded-lg border-2 border-black bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
+                        className="rounded-lg border-2 border-ink bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
                         onClick={() => setEdit({ id: c.id, name: c.name || '', phone_primary: c.phone_primary || '', phone_secondary: '', preferred_time: '' })}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg border-2 border-black bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
+                        className="rounded-lg border-2 border-ink bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
                         onClick={() => setHapus(c)}
                       >
                         Hapus
@@ -174,6 +174,48 @@ export default function AdminCustomers() {
           </tbody>
         </table>
       </div>
+
+      {/* Cards mobile (di bawah lg) — pola sama Pricelist customer */}
+      <ul className="space-y-3 lg:hidden">
+        {loading ? (
+          <li className="card p-4 text-center text-gray-500">Memuat…</li>
+        ) : rows.length === 0 ? (
+          <li className="card p-4 text-center text-gray-500">Tidak ada customer.</li>
+        ) : rows.map((c) => (
+          <li key={c.id} className="card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-bold">{c.name || '—'}</p>
+                <p className="truncate text-xs text-gray-500">{c.email}</p>
+              </div>
+              {isSuper ? (
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    className="rounded-lg border-2 border-ink bg-white px-2 py-0.5 text-xs font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
+                    onClick={() => setEdit({ id: c.id, name: c.name || '', phone_primary: c.phone_primary || '', phone_secondary: '', preferred_time: '' })}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border-2 border-ink bg-red-50 px-2 py-0.5 text-xs font-extrabold text-red-800 hover:bg-red-100"
+                    onClick={() => setHapus(c)}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <p className="mt-2 text-sm">{c.phone_primary || '—'}</p>
+            <p className="mt-1 text-sm text-gray-600">{c.default_address || '—'}</p>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="font-bold">{c.total_bookings} booking</span>
+              <span className="text-gray-500">{c.last_booking ? formatDateShort(c.last_booking) : '—'}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-sm text-gray-600">Total {total} customer · Halaman {page}/{totalPages}</p>

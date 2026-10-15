@@ -76,7 +76,7 @@ export default function Login() {
 
         <a
           href={`${import.meta.env.BASE_URL}api/google-login.php`}
-          className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-black bg-white px-4 py-3 text-base font-extrabold shadow-[3px_3px_0_0_#000000] transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
+          className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-white px-4 py-3 text-base font-extrabold shadow-brutal-sm transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_0_#000000]"
         >
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
@@ -90,7 +90,7 @@ export default function Login() {
           Login Google memakai akun Gmail kamu — email dan nama otomatis terisi.
         </p>
 
-        <hr className="mb-6 border-black" />
+        <hr className="mb-6 border-ink" />
 
         <form onSubmit={onSubmit} noValidate>
           <div className="mb-4">
@@ -105,7 +105,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+              className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
               placeholder="nama@email.com"
             />
           </div>

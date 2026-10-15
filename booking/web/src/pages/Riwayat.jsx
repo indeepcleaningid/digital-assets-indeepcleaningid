@@ -222,7 +222,7 @@ export default function Riwayat() {
               Slotnya otomatis dibuka lagi untuk pelanggan lain. Tulis alasan ya.
             </p>
             <textarea
-              className="mb-3 w-full rounded-xl border-2 border-ink p-3"
+              className="input-brutal mb-3 p-3"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}

@@ -28,7 +28,7 @@ export default function Banner({ variant = 'error', children, className = '', on
   return (
     <div
       role={ariaRole}
-      className={`rounded-xl border-2 border-black px-3 py-2 text-sm font-bold ${VARIANTS[variant] || VARIANTS.error} ${className}`}
+      className={`rounded-xl border-2 border-ink px-3 py-2 text-sm font-bold ${VARIANTS[variant] || VARIANTS.error} ${className}`}
     >
       <div className="flex items-start justify-between gap-2">
         <span>{children}</span>

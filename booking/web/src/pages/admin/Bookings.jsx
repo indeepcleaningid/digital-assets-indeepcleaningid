@@ -248,7 +248,7 @@ export default function AdminBookings() {
       {isDesktop ? (
         <div className="card overflow-x-auto p-0">
           <table className="w-full text-left text-sm">
-            <thead className="border-b-2 border-black bg-paper">
+            <thead className="border-b-2 border-ink bg-paper">
               <tr>
                 <th className="p-3 font-extrabold">Kode</th>
                 <th className="p-3 font-extrabold">Nama</th>

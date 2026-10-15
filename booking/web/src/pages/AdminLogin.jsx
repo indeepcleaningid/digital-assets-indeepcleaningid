@@ -67,7 +67,7 @@ export default function AdminLogin() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border-2 border-black px-3 py-2 focus-visible:outline-none"
+              className="w-full rounded-xl border-2 border-ink px-3 py-2 focus-visible:outline-none"
               placeholder="admin indeep"
             />
           </div>

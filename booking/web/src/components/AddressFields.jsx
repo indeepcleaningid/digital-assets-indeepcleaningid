@@ -33,8 +33,8 @@ export default function AddressFields({
   const req = (k) => (REQUIRED_ADDRESS_FIELDS.includes(k) ? <span className="text-red-600"> *</span> : null)
 
   if (variant === 'wizard') {
-    const cls =
-      'w-full rounded-xl border-2 border-ink bg-white px-3 py-2 text-base focus:outline-none focus-visible:outline-3'
+    // Token .input-brutal (issue #3 batch 3c) — dulu nulis styling manual
+    const cls = 'input-brutal text-base'
     return (
       <>
         {showLabel && (

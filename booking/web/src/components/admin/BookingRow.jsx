@@ -93,7 +93,7 @@ export default function BookingRow({ booking: b, variant, isSuper, transitions, 
           <BookingItemsList booking={b} className="mt-1 font-normal" />
         </td>
         <td className="p-3">
-          <span className={`inline-block rounded-lg border-2 border-black px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(b.status)}`}>
+          <span className={`inline-block rounded-lg border-2 border-ink px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(b.status)}`}>
             {statusLabel(b.status)}
           </span>
         </td>
@@ -126,7 +126,7 @@ export default function BookingRow({ booking: b, variant, isSuper, transitions, 
           <p className="mt-1 font-bold">{formatRupiah(b.total)}</p>
           <BookingItemsList booking={b} className="mt-1" />
         </div>
-        <span className={`shrink-0 rounded-lg border-2 border-black px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(b.status)}`}>
+        <span className={`shrink-0 rounded-lg border-2 border-ink px-2 py-0.5 text-xs font-extrabold ${statusBadgeClass(b.status)}`}>
           {statusLabel(b.status)}
         </span>
       </div>

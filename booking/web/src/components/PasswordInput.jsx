@@ -32,7 +32,7 @@ export default function PasswordInput({
         minLength={minLength}
         value={value}
         onChange={onChange}
-        className={'w-full rounded-xl border-2 border-black px-3 py-2 pr-12 focus-visible:outline-none ' + className}
+        className={'w-full rounded-xl border-2 border-ink px-3 py-2 pr-12 focus-visible:outline-none ' + className}
       />
       <button
         type="button"

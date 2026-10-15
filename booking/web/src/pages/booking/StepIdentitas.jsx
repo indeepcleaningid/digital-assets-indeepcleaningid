@@ -91,8 +91,8 @@ export default function StepIdentitas({
     }
   }
 
-  const fieldClass =
-    'w-full rounded-xl border-2 border-ink bg-white px-3 py-2 text-base focus:outline-none focus-visible:outline-3'
+  // Token .input-brutal (issue #3 batch 3c) — dulu nulis styling manual
+  const fieldClass = 'input-brutal text-base'
 
   return (
     <section className="rounded-card border-2 border-ink bg-white p-5 shadow-brutal sm:p-6">

@@ -138,13 +138,13 @@ export default function AlamatPanel({ user, onBerubah }) {
 
       <ul className="space-y-3">
         {alamat.map((a) => (
-          <li key={a.id} className="rounded-xl border-2 border-black p-3">
+          <li key={a.id} className="rounded-xl border-2 border-ink p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-extrabold">
                   {a.label || 'Alamat'}{' '}
                   {a.is_default ? (
-                    <span className="ml-1 rounded-md border-2 border-black bg-cta px-1.5 py-0.5 text-xs font-extrabold text-brand">
+                    <span className="ml-1 rounded-md border-2 border-ink bg-cta px-1.5 py-0.5 text-xs font-extrabold text-brand">
                       Utama
                     </span>
                   ) : null}
@@ -193,7 +193,7 @@ export default function AlamatPanel({ user, onBerubah }) {
       </ul>
 
       {form !== null ? (
-        <form onSubmit={onSimpan} noValidate className="mt-4 rounded-xl border-2 border-dashed border-black p-4">
+        <form onSubmit={onSimpan} noValidate className="mt-4 rounded-xl border-2 border-dashed border-ink p-4">
           <h3 className="mb-3 font-extrabold">
             {form === 'baru' ? 'Alamat baru' : 'Edit alamat'}
           </h3>
