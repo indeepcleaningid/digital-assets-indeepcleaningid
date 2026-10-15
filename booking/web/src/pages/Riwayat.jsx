@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth.jsx'
 import Modal from '../components/Modal.jsx'
 import { formatDateShort, formatRupiah, formatSlotTime, statusBadgeClass, statusLabel } from '../lib/format.js'
 import HubungiAdmin from '../components/HubungiAdmin.jsx'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Riwayat booking milik sendiri (PRD Bab 9.3, BR09, BR10):
@@ -107,9 +108,9 @@ export default function Riwayat() {
       </div>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-card border-2 border-ink bg-danger p-4 font-bold shadow-brutal-sm">
+        <Banner variant="error" className="mb-4">
           {error}
-        </div>
+        </Banner>
       )}
 
       {bookings === null && <p className="font-bold">Memuat riwayat…</p>}

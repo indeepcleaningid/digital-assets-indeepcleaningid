@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { formatRupiah } from '../lib/format.js'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Pricelist customer (PRD Bab 10.5): katalog SKU aktif, harga dari database.
@@ -99,12 +100,17 @@ export default function Pricelist() {
       </div>
 
       {error ? (
-        <div role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
-          <p>{error}</p>
-          <button type="button" className="btn btn-press mt-2 py-1.5 text-sm" onClick={muat}>
-            Coba lagi
-          </button>
-        </div>
+        <Banner
+          variant="error"
+          className="mb-4"
+          action={
+            <button type="button" className="btn btn-press mt-2 py-1.5 text-sm" onClick={muat}>
+              Coba lagi
+            </button>
+          }
+        >
+          {error}
+        </Banner>
       ) : null}
 
       {/* --- Tabel (desktop) --- */}

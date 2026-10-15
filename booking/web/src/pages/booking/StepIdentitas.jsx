@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AddressFields from '../../components/AddressFields.jsx'
+import Banner from '../../components/Banner.jsx'
 import { EMPTY_ADDRESS, validateAddress } from '../../lib/addressForm.js'
 
 /**
@@ -100,11 +101,7 @@ export default function StepIdentitas({
         Kami pakai nomor ini buat koordinasi teknisi, ya. Bisa diganti kapan saja.
       </p>
 
-      {error && (
-        <div role="alert" className="mb-4 rounded-xl border-2 border-ink bg-danger p-3 font-bold">
-          {error}
-        </div>
-      )}
+      {error && <Banner variant="error" className="mb-4">{error}</Banner>}
 
       <div className="mb-4">
         <label htmlFor="bk-name" className="mb-1 block font-bold">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import AddressFields from '../components/AddressFields.jsx'
+import Banner from '../components/Banner.jsx'
 import { EMPTY_ADDRESS, normalizeAddress, validateAddress } from '../lib/addressForm.js'
 
 /**
@@ -79,9 +80,9 @@ export default function LengkapiProfil() {
       </header>
 
       {error ? (
-        <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="error" className="mb-4">
           {error}
-        </p>
+        </Banner>
       ) : null}
 
       <form onSubmit={onSubmit} className="card space-y-4 p-5">

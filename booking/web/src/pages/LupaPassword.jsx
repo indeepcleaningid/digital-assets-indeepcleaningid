@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import PasswordInput from '../components/PasswordInput.jsx'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Lupa password (PRD Bab 10.4, 16.2) — halaman publik.
@@ -78,14 +79,14 @@ export default function LupaPassword() {
         </header>
 
         {error ? (
-          <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+          <Banner variant="error" className="mb-4">
             {error}
-          </p>
+          </Banner>
         ) : null}
         {sukses ? (
-          <p role="status" className="mb-4 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">
+          <Banner variant="success" className="mb-4">
             {sukses}
-          </p>
+          </Banner>
         ) : null}
 
         {fase === 'email' ? (

@@ -10,6 +10,30 @@
 
 ## 2026-10-15
 
+### UI kit (Batch 2, penutup): Banner tunggal ganti 25 banner manual — issue #8
+
+- **Apa**: komponen `components/Banner.jsx` (variant `error`/`success`/`info`/
+  `warning`, `className`, `onClose`, `action`, `role` otomatis). **26 banner**
+  manual (2 gaya berbeda) diganti di 17 file:
+  `admin/Logs`, `admin/Dashboard`, `admin/Pricelist`, `admin/Reports`,
+  `admin/Bookings` (termasuk `moveError` dalam Modal), `Login`, `LupaPassword`,
+  `LengkapiProfil`, `Pricelist`, `AdminLogin`, `Profil`, `Riwayat`,
+  `RiwayatDetail`, `components/profil/{AlamatPanel,GantiEmail,GantiPassword}`,
+  `booking/StepIdentitas`.
+- **Kenapa**: Issue #8 — banner error/success ditulis ulang di banyak tempat
+  dengan 2 gaya. Sekarang satu komponen; ubah warna/copy cukup di satu file.
+- **Bukti**: build Vite sukses (Banner jadi chunk sendiri ~0.72 kB). Verifikasi
+  sumber **17/17 file pakai `<Banner>`**. Regresi API: Tahap 2 **17/18**
+  (S2 pre-existing), Admin **33/33**, Security **23/23**.
+- **Sengaja dibiarkan** (bukan banner seragam): blok "gagal memuat harga" di
+  `Booking.jsx`/`StepItem`/`StepReview` (punya struktur + tombol action sendiri),
+  teks kecil merah di dalam form, dan status teks halaman (`App.jsx`,
+  `AdminRoute.jsx`, `Home.jsx`).
+- **File**: `web/src/components/Banner.jsx` (baru) + 17 file pemakai + bundle
+  `public/assets/*` + `public/index.html`, `ENGINEER.md`.
+- **Keputusan**: tetap statis sampai state direset pemanggil (bukan auto-dismiss
+  toast) — sesuai keputusan Bang Rob; toast auto-dismiss bisa jadi peningkatan terpisah.
+
 ### UI kit (Batch 1): Modal + ConfirmDialog + StatusBadge — issue #8
 
 - **Apa**: komponen UI bersama baru di `components/`:

@@ -6,6 +6,7 @@ import DataDiriForm from '../components/profil/DataDiriForm.jsx'
 import AlamatPanel from '../components/profil/AlamatPanel.jsx'
 import GantiPassword from '../components/profil/GantiPassword.jsx'
 import GantiEmail from '../components/profil/GantiEmail.jsx'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Halaman Profil (PRD Bab 10.3 + 16.2) — tipis: header + banner + susun panel.
@@ -50,14 +51,14 @@ export default function Profil() {
       </header>
 
       {error ? (
-        <p role="alert" className="mb-4 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="error" className="mb-4">
           {error}
-        </p>
+        </Banner>
       ) : null}
       {success ? (
-        <p role="status" className="mb-4 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">
+        <Banner variant="success" className="mb-4">
           {success}
-        </p>
+        </Banner>
       ) : null}
 
       <FotoProfil user={user} onBerubah={refresh} onError={setError} onSuccess={setSuccess} />

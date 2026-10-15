@@ -4,6 +4,7 @@ import { formatDateShort } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
 import Modal from '../../components/Modal.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Daftar customer admin (PRD Bab 16.3): WA, total booking, alamat default, riwayat.
@@ -115,10 +116,10 @@ export default function AdminCustomers() {
       </form>
 
       {error ? (
-        <p role="alert" className="mb-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <Banner variant="error" className="mb-3">{error}</Banner>
       ) : null}
       {sukses ? (
-        <p role="status" className="mb-3 rounded-xl border-2 border-black bg-green-100 px-3 py-2 text-sm font-bold">{sukses}</p>
+        <Banner variant="success" className="mb-3">{sukses}</Banner>
       ) : null}
 
       <div className="card overflow-x-auto p-0">

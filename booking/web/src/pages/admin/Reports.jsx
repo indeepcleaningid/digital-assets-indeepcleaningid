@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import { formatRupiah, formatDateShort, statusLabel } from '../../lib/format.js'
+import Banner from '../../components/Banner.jsx'
 
 /**
  * Laporan omzet estimasi (PRD Bab 16.3) — HAK SUPERADMIN.
@@ -45,7 +46,7 @@ export default function AdminReports() {
     return (
       <div>
         <h2 className="mb-4 text-2xl font-extrabold">Laporan Omzet</h2>
-        <p role="alert" className="rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{error}</p>
+        <Banner variant="error">{error}</Banner>
         <button type="button" className="btn btn-press mt-3 py-2 text-sm" onClick={() => muat(from, to)}>
           Coba lagi
         </button>

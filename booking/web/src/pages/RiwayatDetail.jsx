@@ -4,6 +4,7 @@ import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import { formatDate, formatRupiah, formatSlotTime, statusBadgeClass, statusLabel } from '../lib/format.js'
 import HubungiAdmin from '../components/HubungiAdmin.jsx'
+import Banner from '../components/Banner.jsx'
 
 /**
  * Detail booking customer (klik card di Riwayat):
@@ -44,9 +45,9 @@ export default function RiwayatDetail() {
   if (error) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-8">
-        <div role="alert" className="rounded-card border-2 border-ink bg-danger p-4 font-bold shadow-brutal-sm">
+        <Banner variant="error">
           {error}
-        </div>
+        </Banner>
         <Link to="/riwayat" className="btn btn-ghost btn-press mt-4 inline-block px-4 py-2">
           ← Kembali ke Riwayat
         </Link>
