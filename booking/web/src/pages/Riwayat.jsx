@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
+import Modal from '../components/Modal.jsx'
 import { formatDateShort, formatRupiah, formatSlotTime, statusBadgeClass, statusLabel } from '../lib/format.js'
 import HubungiAdmin from '../components/HubungiAdmin.jsx'
 
@@ -192,22 +193,30 @@ export default function Riwayat() {
         </ul>
       )}
 
-      {/* Dialog batal */}
-      {cancelTarget && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setCancelTarget(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-card border-2 border-ink bg-white p-5 shadow-brutal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="cancel-title" className="mb-1 text-lg font-extrabold">
-              Batalkan {cancelTarget.code}?
-            </h2>
+      {/* Dialog batal (berform: alasan wajib) */}
+      <Modal
+        open={cancelTarget !== null}
+        title={cancelTarget ? `Batalkan ${cancelTarget.code}?` : ''}
+        onClose={() => setCancelTarget(null)}
+        busy={canceling}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost btn-press py-2" onClick={() => setCancelTarget(null)}>
+              Kembali
+            </button>
+            <button
+              type="button"
+              className="btn border-red-700 bg-red-600 py-2 text-white hover:bg-red-700"
+              onClick={submitCancel}
+              disabled={canceling}
+            >
+              {canceling ? 'Membatalkan…' : 'Ya, Batalkan'}
+            </button>
+          </>
+        }
+      >
+        {cancelTarget ? (
+          <>
             <p className="mb-3 text-sm text-gray-600">
               Slotnya otomatis dibuka lagi untuk pelanggan lain. Tulis alasan ya.
             </p>
@@ -225,22 +234,9 @@ export default function Riwayat() {
                 {cancelError}
               </p>
             )}
-            <div className="flex gap-3">
-              <button type="button" className="btn btn-ghost btn-press flex-1 py-2" onClick={() => setCancelTarget(null)}>
-                Kembali
-              </button>
-              <button
-                type="button"
-                className="btn flex-1 border-red-700 bg-red-600 py-2 text-white hover:bg-red-700"
-                onClick={submitCancel}
-                disabled={canceling}
-              >
-                {canceling ? 'Membatalkan…' : 'Ya, Batalkan'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : null}
+      </Modal>
     </main>
   )
 }

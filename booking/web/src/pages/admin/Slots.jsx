@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
+import Modal from '../../components/Modal.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { formatDate, formatSlotTime } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
 
@@ -225,17 +227,51 @@ export default function AdminSlots() {
         </div>
       )}
 
-      {/* Panel aksi slot */}
-      {pilih ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold">
-              {formatDate(pilih.slot_date)} — {formatSlotTime(pilih.slot_time)}
-            </h3>
+      {/* Panel aksi slot (berform: kapasitas + kunci) */}
+      <Modal
+        open={pilih !== null}
+        title={pilih ? `${formatDate(pilih.slot_date)} — ${formatSlotTime(pilih.slot_time)}` : ''}
+        onClose={() => setPilih(null)}
+        busy={busy}
+        footer={pilih ? (
+          <>
+            <button
+              type="button"
+              disabled={busy || Number(kapasitas) < pilih.booked || Number(kapasitas) === pilih.capacity}
+              onClick={() => simpanAksi({ id: pilih.id, capacity: Number(kapasitas), is_locked: pilih.is_locked })}
+              className="btn btn-cta py-2"
+            >
+              {busy ? 'Menyimpan…' : 'Simpan Kapasitas'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => simpanAksi({ id: pilih.id, is_locked: !pilih.is_locked })}
+              className="btn btn-press py-2"
+            >
+              {pilih.is_locked ? 'Buka Kunci' : 'Kunci Slot'}
+            </button>
+            {isSuper && pilih.booked === 0 ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setHapus(pilih)}
+                className="btn border-red-700 bg-red-50 text-red-800 hover:bg-red-100 py-2"
+              >
+                Hapus Slot
+              </button>
+            ) : null}
+            <button type="button" onClick={() => setPilih(null)} className="btn btn-ghost py-2">
+              Tutup
+            </button>
+          </>
+        ) : null}
+      >
+        {pilih ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">
               Terisi {pilih.booked}/{pilih.capacity} · {cellLabel(pilih)}
             </p>
-
             <label className="mt-4 block text-sm font-bold">
               Kapasitas
               <input
@@ -251,47 +287,27 @@ export default function AdminSlots() {
                 Tidak boleh kurang dari {pilih.booked} yang sudah terisi.
               </p>
             ) : null}
+          </>
+        ) : null}
+      </Modal>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={busy || Number(kapasitas) < pilih.booked || Number(kapasitas) === pilih.capacity}
-                onClick={() => simpanAksi({ id: pilih.id, capacity: Number(kapasitas), is_locked: pilih.is_locked })}
-                className="btn btn-cta"
-              >
-                {busy ? 'Menyimpan…' : 'Simpan Kapasitas'}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => simpanAksi({ id: pilih.id, is_locked: !pilih.is_locked })}
-                className="btn btn-press"
-              >
-                {pilih.is_locked ? 'Buka Kunci' : 'Kunci Slot'}
-              </button>
-              {isSuper && pilih.booked === 0 ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setHapus(pilih)}
-                  className="btn border-red-700 bg-red-50 text-red-800 hover:bg-red-100"
-                >
-                  Hapus Slot
-                </button>
-              ) : null}
-              <button type="button" onClick={() => setPilih(null)} className="btn btn-ghost">
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Dialog tambah slot manual (superadmin) */}
-      {tambah ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold">Tambah Slot Manual</h3>
+      {/* Dialog tambah slot manual (superadmin, berform) */}
+      <Modal
+        open={tambah !== null}
+        title="Tambah Slot Manual"
+        onClose={() => setTambah(null)}
+        busy={busy}
+        footer={
+          <>
+            <button type="button" disabled={busy} onClick={simpanTambah} className="btn btn-cta py-2">
+              {busy ? 'Menyimpan…' : 'Tambah Slot'}
+            </button>
+            <button type="button" onClick={() => setTambah(null)} className="btn btn-ghost py-2">Batal</button>
+          </>
+        }
+      >
+        {tambah ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">Selasa libur mutlak. Jam hanya 09.00 / 13.00.</p>
             <label className="mt-4 block text-sm font-bold">
               Tanggal
@@ -308,36 +324,31 @@ export default function AdminSlots() {
               Kapasitas (1-50)
               <input type="number" min={1} max={50} value={tambah.capacity} onChange={(e) => setTambah({ ...tambah, capacity: Number(e.target.value) })} className="input-brutal mt-1" />
             </label>
-            <div className="mt-5 flex gap-2">
-              <button type="button" disabled={busy} onClick={simpanTambah} className="btn btn-cta">
-                {busy ? 'Menyimpan…' : 'Tambah Slot'}
-              </button>
-              <button type="button" onClick={() => setTambah(null)} className="btn btn-ghost">Batal</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Modal>
 
-      {/* Dialog hapus slot (superadmin) */}
-      {hapus ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold text-red-700">Hapus Slot?</h3>
+      {/* Dialog hapus slot (superadmin, konfirmasi) */}
+      <ConfirmDialog
+        open={hapus !== null}
+        title="Hapus Slot?"
+        confirmLabel="Ya, Hapus"
+        variant="destructive"
+        busy={busy}
+        onConfirm={konfirmasiHapus}
+        onCancel={() => setHapus(null)}
+      >
+        {hapus ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">
               {formatDate(hapus.slot_date)} {formatSlotTime(hapus.slot_time)} · {hapus.booked}/{hapus.capacity} terisi.
             </p>
             <p className="mt-3 text-sm text-gray-600">
               Hanya slot kosong yang bisa dihapus. Kalau hari itu masih dibutuhkan, buat lagi lewat Tambah Slot.
             </p>
-            <div className="mt-5 flex gap-2">
-              <button type="button" disabled={busy} onClick={konfirmasiHapus} className="btn border-red-700 bg-red-600 text-white hover:bg-red-700">
-                {busy ? 'Menghapus…' : 'Ya, Hapus'}
-              </button>
-              <button type="button" onClick={() => setHapus(null)} className="btn btn-ghost">Batal</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </ConfirmDialog>
     </div>
   )
 }

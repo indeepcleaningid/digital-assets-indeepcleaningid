@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import AddressFields from '../AddressFields.jsx'
+import ConfirmDialog from '../ConfirmDialog.jsx'
 import { EMPTY_ADDRESS, normalizeAddress } from '../../lib/addressForm.js'
 
 export default function AlamatPanel({ user, onBerubah }) {
@@ -17,6 +18,7 @@ export default function AlamatPanel({ user, onBerubah }) {
   const [form, setForm] = useState(null) // null = tertutup, 'baru' = tambah, angka id = edit
   const [isi, setIsi] = useState(EMPTY_ADDRESS)
   const [busy, setBusy] = useState(false)
+  const [hapus, setHapus] = useState(null) // alamat yang mau dihapus (untuk ConfirmDialog)
 
   const alamat = user?.addresses || []
 
@@ -89,16 +91,21 @@ export default function AlamatPanel({ user, onBerubah }) {
     }
   }
 
-  async function onHapus(a) {
-    if (!window.confirm(`Hapus alamat "${a.label || 'Alamat'}"?`)) return
+  async function konfirmasiHapus() {
+    if (!hapus) return
     setError('')
     setSuccess('')
+    setBusy(true)
     try {
-      await api(`/addresses.php?id=${a.id}`, { method: 'DELETE' })
+      await api(`/addresses.php?id=${hapus.id}`, { method: 'DELETE' })
       await onBerubah()
       setSuccess('Alamat dihapus.')
+      setHapus(null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menghapus alamat.')
+      setHapus(null)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -172,7 +179,7 @@ export default function AlamatPanel({ user, onBerubah }) {
                 {!a.is_default ? (
                   <button
                     type="button"
-                    onClick={() => onHapus(a)}
+                    onClick={() => setHapus(a)}
                     className="btn btn-ghost text-xs"
                   >
                     Hapus
@@ -206,6 +213,20 @@ export default function AlamatPanel({ user, onBerubah }) {
           </div>
         </form>
       ) : null}
+
+      <ConfirmDialog
+        open={hapus !== null}
+        title={hapus ? `Hapus alamat "${hapus.label || 'Alamat'}"?` : ''}
+        confirmLabel="Ya, Hapus"
+        variant="destructive"
+        busy={busy}
+        onConfirm={konfirmasiHapus}
+        onCancel={() => setHapus(null)}
+      >
+        <p className="text-sm text-gray-600">
+          Alamat ini akan dihapus dari daftar kamu. Tidak bisa dibatalkan.
+        </p>
+      </ConfirmDialog>
     </section>
   )
 }
