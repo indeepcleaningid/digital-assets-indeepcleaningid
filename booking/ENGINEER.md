@@ -10,7 +10,49 @@
 
 ## 2026-10-15
 
-### Rate limit IP tepercaya di otp-request, otp-verify & otp-email-request-old (20/menit, key REMOTE_ADDR) — issue #25, PR #35 (PR ini)
+### Timezone WIB diset dari kode: bootstrap + SET time_zone DB + jendela rate limit seragam PHP — issue #18, PR ini
+
+- **Apa**: (1) `app/lib/bootstrap.php` → `date_default_timezone_set('Asia/Jakarta')`
+  sebelum require apa pun — berlaku untuk semua endpoint & skrip cron; (2)
+  `app/lib/db.php` → `SET time_zone = '+07:00'` per koneksi PDO, jadi semua
+  `NOW()`/`CURDATE()`/`DEFAULT CURRENT_TIMESTAMP` di MySQL = WIB (`updated_at`,
+  window `login_attempts`, expire-bookings vs slot bisnis); (3)
+  `app/lib/ratelimit.php` → `window_start` ditulis dari PHP `date()` (bukan
+  `NOW()` DB) — jendela rate limit satu sumber (PHP), mengikuti pola
+  `created_at` di `otp.php`. README ditempeli bagian **Konvensi waktu (WIB)**.
+- **Kenapa**: Issue #18 — timezone tidak pernah di-set dari kode; satu-satunya
+  set ada di Dockerfile (dev). Produksi Hostinger default UTC → "hari ini"
+  dashboard, cutoff H-1 cancel, aturan Selasa, expiry/cooldown OTP, dan
+  jendela rate limit bisa meleset 7 jam — kelas bug yang hanya muncul di
+  produksi. Bukti campur sumber: rate limit tulis `NOW()` (DB) tapi cek
+  `time()` (PHP); komentar historis `otp.php` soal bug UTC-vs-WIB.
+- **Hasil audit `date()` vs `NOW()` vs `CURDATE()`**: tidak ada pemakaian
+  `CURDATE()`. Jalur PHP (`dashboard` hari ini & rentang bulan, `availability`
+  hari ini + clamp H+30, `bookings-cancel` cutoff H-1, expiry/cooldown OTP,
+  window rate limit, header Date SMTP, cookie session) ikut timezone bootstrap;
+  jalur SQL `NOW()` (`updated_at` bookings/google, window `login_attempts`,
+  `expire-bookings` vs slot, insert slots) ikut `SET time_zone`. Pengecualian
+  disengaja: `audit_logs.created_at = UTC_TIMESTAMP()` (PRD Bab 15) — dibiarkan
+  dan didokumentasikan sebagai konvensi, bukan bug.
+- **Keputusan**: (a) WIB dipaksakan dari **kode**, bukan `php_value` di
+  .htaccess (shared hosting bisa abaikan); (b) `SET time_zone` pakai offset
+  `'+07:00'` — bukan nama zona `Asia/Jakarta` yang butuh tabel timezone MySQL
+  belum tentu ada di shared hosting; (b) jendela rate limit semua-PHP
+  (checklist issue: satu sumber per konteks, jangan campur).
+- **Hasil uji (docker lokal)**: `php -l` lolos; sinkron terbukti — PHP
+  `date()` == MySQL `NOW()` selisih **0 detik**, `@@session.time_zone = +07:00`;
+  bootstrap memaksa WIB walau server dipaksa `php -d date.timezone=UTC`;
+  suite **login 19/19, admin 28/28, tahap 2 11/12** (S2 pre-existing #6),
+  **OTP 21/21**; hammer rate limit 429 di req ke-21 + `Retry-After` (jendela
+  baru ditulis PHP); cron `expire-bookings` & `cleanup-otp` jalan normal.
+  Catatan: kegagalan S7a (balapan) pada run pertama terbukti pre-existing —
+  counter slot Jumat 09.00 keisi `booked=1` jam 14:46 oleh run lain **sebelum**
+  edit ini; hijau setelah reset data test (kelas polusi suite yang sama dengan
+  OTP antar-run).
+- **File**: `app/lib/bootstrap.php`, `app/lib/db.php`, `app/lib/ratelimit.php`,
+  `README.md`, `ENGINEER.md`.
+
+### Rate limit IP tepercaya di otp-request, otp-verify & otp-email-request-old (20/menit, key REMOTE_ADDR) — issue #25, PR #35 (merged `9fd56dc`)
 
 - **Apa**: `rate_limit()` dapat parameter opsional `$ip` (default tetap
   `client_ip()` — endpoint publik tidak berubah); helper baru `trusted_ip()`

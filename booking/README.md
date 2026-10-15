@@ -119,6 +119,22 @@ satu dashboard admin yang jujur · local dev nyala dengan satu perintah.
 | CI | GitHub Actions: `php -l` + build Vite + cek sinkron bundle — **⚠️ belum aktif** (file workflow masih di `booking/.github/workflows/`, belum di root repo; lihat [Deployment dan CI/CD](#deployment-dan-cicd)) | Nangkep error sintaks dan "lupa rebuild" sebelum direview — sementara ini dijalankan manual |
 | Deploy | Push ke `main` → **auto-deploy Hostinger (15–20 detik)**, sudah terbukti (bundle live == bundle `main`) | Tanpa upload manual, tanpa SSH |
 
+### Konvensi waktu (WIB)
+
+Semua waktu aplikasi = **WIB (Asia/Jakarta)** dan diset dari **kode**, bukan
+dari server (issue #18) — produksi Hostinger tidak menyetel timezone apa pun:
+
+- `app/lib/bootstrap.php` → `date_default_timezone_set('Asia/Jakarta')` untuk
+  semua endpoint & skrip cron (hari ini di dashboard, cutoff H-1 cancel,
+  expiry/cooldown OTP, window rate limit).
+- `app/lib/db.php` → `SET time_zone = '+07:00'` per koneksi, jadi `NOW()` /
+  `CURDATE()` / `DEFAULT CURRENT_TIMESTAMP` di MySQL juga WIB (updated_at,
+  `login_attempts`, expire-bookings vs slot bisnis).
+- Rate limit window **ditulis dari PHP** (`date()`), bukan `NOW()` DB —
+  satu sumber per konteks, jangan dikembalikan ke campur.
+- Satu pengecualian sengaja: **`audit_logs.created_at` = `UTC_TIMESTAMP()`**
+  sesuai PRD Bab 15 — tampil mentah (UTC) di halaman logs admin.
+
 ---
 
 ## Arsitektur
