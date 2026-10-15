@@ -18,6 +18,7 @@ require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/session.php';
 require __DIR__ . '/../../app/lib/quote.php';
 require __DIR__ . '/../../app/lib/audit.php';
+require __DIR__ . '/../../app/lib/slots.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
@@ -69,27 +70,12 @@ if ($existing) {
 $dateRaw = trim((string) ($body['date'] ?? ''));
 $timeRaw = trim((string) ($body['time'] ?? ''));
 
-$dateObj = DateTimeImmutable::createFromFormat('Y-m-d', $dateRaw);
-$err = DateTimeImmutable::getLastErrors();
-if (!$dateObj || $dateRaw === '' || ($err !== false && ($err['warning_count'] > 0 || $err['error_count'] > 0))) {
-    json_error(400, 'date_invalid', 'Pilih tanggal dulu ya.');
-}
+// Selasa libur, tidak lewat, maks H+30 — aturan BERSAMA dengan reschedule
+// admin lewat slot_assert_date_rules() (app/lib/slots.php, issue #17).
+slot_assert_date_rules($dateRaw);
 
-$today = new DateTimeImmutable('now'); // container sudah WIB
+$today = new DateTimeImmutable('now'); // WIB — bootstrap
 $todayStr = $today->format('Y-m-d');
-
-if ($dateRaw < $todayStr) {
-    json_error(400, 'date_invalid', 'Tanggal sudah lewat. Pilih tanggal ke depan ya.');
-}
-
-$maxDate = new DateTimeImmutable($todayStr . ' +30 days');
-if ($dateRaw > $maxDate->format('Y-m-d')) {
-    json_error(400, 'date_invalid', 'Jadwal maksimal 30 hari ke depan ya.');
-}
-
-if ((int) $dateObj->format('N') === 2) {
-    json_error(400, 'hari_selasa', 'Selasa kami libur ya. Pilih Rabu sampai Senin.');
-}
 
 if (!in_array($timeRaw, ['09.00', '13.00'], true)) {
     json_error(400, 'jam_tidak_tersedia', 'Jam cuci hanya tersedia 09.00 atau 13.00 ya.');

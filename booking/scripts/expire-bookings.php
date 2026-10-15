@@ -53,9 +53,10 @@ foreach ($rows as $b) {
         );
         $upd->execute([(int) $b['id']]);
         if ($upd->rowCount() > 0) {
-            // Buka lagi slotnya
+            // Buka lagi slotnya — IF, bukan GREATEST(booked-1, 0): aritmetika
+            // UNSIGNED meledak di 0-1 sebelum GREATEST sempat clamp (issue #17)
             $pdo->prepare(
-                'UPDATE slots SET booked = GREATEST(booked - 1, 0)
+                'UPDATE slots SET booked = IF(booked > 0, booked - 1, 0)
                  WHERE slot_date = ? AND slot_time = ?'
             )->execute([$b['slot_date'], $b['slot_time']]);
 

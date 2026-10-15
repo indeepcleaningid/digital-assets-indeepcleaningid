@@ -103,11 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
         if ($newDate === '' || !in_array($newTime, ['09.00', '13.00'], true)) {
             json_error(400, 'bad_request', 'Tanggal (YYYY-MM-DD) dan jam (09.00/13.00) wajib diisi ya.');
         }
-        $d = DateTimeImmutable::createFromFormat('Y-m-d', $newDate);
-        $err = DateTimeImmutable::getLastErrors();
-        if (!$d || ($err !== false && ($err['warning_count'] > 0 || $err['error_count'] > 0))) {
-            json_error(400, 'bad_request', 'Format tanggal harus YYYY-MM-DD ya.');
-        }
+        // Aturan jadwal BERSAMA dengan create customer: Selasa libur, tidak
+        // lewat, maks H+30 (issue #17) — superadmin ikut aturan yang sama.
+        slot_assert_date_rules($newDate);
 
         $row = $pdo->prepare('SELECT id, code, status, slot_date, slot_time, version FROM bookings WHERE id = ?');
         $row->execute([$id]);
@@ -136,7 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
                 json_error(409, 'slot_full', 'Slot tujuan sudah penuh atau dikunci ya. Pilih jadwal lain.');
             }
 
-            $pdo->prepare('UPDATE slots SET booked = GREATEST(booked - 1, 0) WHERE slot_date = ? AND slot_time = ?')
+            // IF, bukan GREATEST(booked-1, 0): aritmetika UNSIGNED meledak di
+            // 0-1 sebelum GREATEST sempat clamp (underflow 1690, issue #17)
+            $pdo->prepare('UPDATE slots SET booked = IF(booked > 0, booked - 1, 0) WHERE slot_date = ? AND slot_time = ?')
                 ->execute([$cur['slot_date'], $cur['slot_time']]);
             $pdo->prepare('UPDATE slots SET booked = booked + 1 WHERE id = ?')->execute([(int) $newSlot['id']]);
             $pdo->prepare(

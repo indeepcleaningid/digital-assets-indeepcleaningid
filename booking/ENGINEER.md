@@ -10,7 +10,43 @@
 
 ## 2026-10-15
 
-### Timezone WIB diset dari kode: bootstrap + SET time_zone DB + jendela rate limit seragam PHP — issue #18, PR #36 (PR ini)
+### Reschedule admin diikat aturan jadwal create (Selasa/lewat/H+30) + fix underflow `booked-1` — issue #17, PR #37 (PR ini)
+
+- **Apa**: (1) Aturan tanggal jadwal diekstrak jadi fungsi bersama
+  `slot_assert_date_rules()` di `app/lib/slots.php` (format, tidak lewat,
+  maks H+30, Selasa libur — kode error & pesan identik dengan perilaku lama
+  create). (2) `bookings-create.php` memakai fungsi itu (menghapus blok
+  duplikat inline). (3) Reschedule admin (`admin/bookings.php` mode pindah
+  slot) kini memanggil fungsi yang sama — superadmin ikut aturan customer;
+  format tanggal invalid pindah dari kode `bad_request` jadi `date_invalid`
+  (diseragamkan). (4) FE `Bookings.jsx`: input tanggal pindah jadwal dapat
+  `min`=hari ini & `max`=H+30, guard Selasa dengan pesan jelas (on change +
+  saat submit), dan pesan error tampil **di dalam** dialog (dulu cuma di
+  banner belakang overlay — tidak terlihat). (5) Bonus fix: 3 titik
+  `GREATEST(booked - 1, 0)` (reschedule, cancel customer, cron expire)
+  diganti `IF(booked > 0, booked - 1, 0)`. (6) Suite admin +5 cek jadi 33
+  (`uji11_pindahJadwalAturan`); README disinkronkan; bundle FE di-rebuild.
+- **Kenapa**: Issue #17 — reschedule admin hanya cek format/status/kapasitas;
+  Selasa libur mutlak, tanggal lewat, dan window H+30 hanya dijalankan jalur
+  customer, jadi admin bisa menaruh booking di Selasa atau masa lalu (aturan
+  tidak konsisten, laporan/omzet bisa aneh). Bonus fix: `GREATEST(booked-1, 0)`
+  meledak dengan underflow BIGINT UNSIGNED (SQLSTATE 22003) saat `booked = 0`
+  — `booked - 1` dihitung dulu sebelum `GREATEST` sempat clamp — ketahuan
+  saat uji happy-path pindah jadwal baru; pola sama di cancel customer
+  (customer-facing) dan cron expire. Redesign strategi counter tetap urusan
+  issue #11 — di sini hanya perbaikan underflow sesuai maksud kode lama.
+- **Hasil uji (docker lokal)**: `php -l` lolos; suite admin **33/33** (uji11:
+  admin biasa 403, Selasa→400 `hari_selasa`, lewat→400 `date_invalid`,
+  H+31→400 `date_invalid`, hari valid→200 + slot berubah); tahap 2 **11/12**
+  (S2 pre-existing #6 — refactor create tidak mengubah perilaku); bundle FE
+  di-build dengan env produksi (`VITE_WA_ADMIN`).
+- **File**: `app/lib/slots.php`, `public/api/bookings-create.php`,
+  `public/api/admin/bookings.php`, `public/api/bookings-cancel.php`,
+  `scripts/expire-bookings.php`, `scripts/uji-admin-tahap4.mjs`,
+  `web/src/pages/admin/Bookings.jsx`, `public/index.html` +
+  `public/assets/*` (build), `README.md`, `ENGINEER.md`.
+
+### Timezone WIB diset dari kode: bootstrap + SET time_zone DB + jendela rate limit seragam PHP — issue #18, PR #36 (merged `4b24a6c`)
 
 - **Apa**: (1) `app/lib/bootstrap.php` → `date_default_timezone_set('Asia/Jakarta')`
   sebelum require apa pun — berlaku untuk semua endpoint & skrip cron; (2)

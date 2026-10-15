@@ -71,7 +71,9 @@ try {
 
     // Bebaskan slot atomik
     $pdo->prepare(
-        'UPDATE slots SET booked = GREATEST(booked - 1, 0) WHERE slot_date = ? AND slot_time = ?'
+        // IF, bukan GREATEST(booked-1, 0): aritmetika UNSIGNED meledak di
+        // 0-1 sebelum GREATEST sempat clamp (underflow 1690, issue #17)
+        'UPDATE slots SET booked = IF(booked > 0, booked - 1, 0) WHERE slot_date = ? AND slot_time = ?'
     )->execute([$booking['slot_date'], $booking['slot_time']]);
 
     // Update booking: cancelled + alasan + version naik
