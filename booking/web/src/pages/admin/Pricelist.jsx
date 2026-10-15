@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import { formatRupiah } from '../../lib/format.js'
+import Modal from '../../components/Modal.jsx'
 
 /**
  * Pricelist admin (PRD Bab 16.3): kelola katalog SKU dari dashboard.
@@ -303,11 +304,24 @@ export default function AdminPricelist() {
         {kategoriList.map((k) => <option key={k} value={k} />)}
       </datalist>
 
-      {/* --- Dialog tambah SKU --- */}
-      {tambah && (
-        <div role="dialog" aria-modal="true" aria-label="Tambah SKU baru" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setTambah(null)}>
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-card border-2 border-ink bg-white p-5 shadow-brutal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-3 text-lg font-extrabold">+ Tambah SKU Baru</h3>
+      {/* --- Dialog tambah SKU (berform) --- */}
+      <Modal
+        open={tambah !== null}
+        title="+ Tambah SKU Baru"
+        ariaLabel="Tambah SKU baru"
+        onClose={() => setTambah(null)}
+        busy={busy}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost btn-press py-2" onClick={() => setTambah(null)}>Batal</button>
+            <button type="button" disabled={busy} className="btn btn-cta py-2" onClick={tambahSku}>
+              {busy ? 'Menyimpan…' : 'Tambah SKU'}
+            </button>
+          </>
+        }
+      >
+        {tambah ? (
+          <>
             <label className="mb-2 block text-sm font-bold">
               Nama Layanan *
               <input
@@ -371,15 +385,9 @@ export default function AdminPricelist() {
                 onChange={(e) => setTambah({ ...tambah, service: e.target.value })}
               />
             </label>
-            <div className="flex gap-2">
-              <button type="button" className="btn btn-ghost btn-press flex-1 py-2" onClick={() => setTambah(null)}>Batal</button>
-              <button type="button" disabled={busy} className="btn btn-cta flex-1 py-2" onClick={tambahSku}>
-                {busy ? 'Menyimpan…' : 'Tambah SKU'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }

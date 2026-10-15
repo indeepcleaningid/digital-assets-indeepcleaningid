@@ -10,6 +10,35 @@
 
 ## 2026-10-15
 
+### UI kit (Batch 1): Modal + ConfirmDialog + StatusBadge — issue #8
+
+- **Apa**: komponen UI bersama baru di `components/`:
+  - `Modal.jsx` — shell dialog umum (portal ke `document.body`, tutup via Esc +
+    klik backdrop, `dismissible`, `busy` mengunci tutup, `footer` buat tombol).
+  - `ConfirmDialog.jsx` — dibangun **di atas `Modal.jsx`**; fokus otomatis ke
+    tombol utama, `variant: 'default' | 'destructive'`.
+  - `StatusBadge.jsx` — badge status booking tunggal (pakai `statusBadgeClass()` +
+    `statusLabel()` dari `lib/format.js`).
+  - **10 modal manual diganti**: `admin/Bookings.jsx` (×3), `admin/Slots.jsx` (×3),
+    `admin/Customers.jsx` (×2), `admin/Pricelist.jsx` (×1), `Riwayat.jsx` (×1).
+  - Satu-satunya `window.confirm` yang tersisa (`components/profil/AlamatPanel.jsx`)
+    diganti `ConfirmDialog`.
+- **Kenapa**: Issue #8 — 10 modal ditulis manual dengan perilaku tidak konsisten
+  (backdrop-click cuma 7/10, Esc 0×), `window.confirm` masih ada, badge status 2
+  bentuk. Sekarang satu perilaku: Esc + backdrop + fokus.
+- **Bukti**: `grep "fixed inset-0 z-50" web/src/pages/` → **0** (semua lewat Modal);
+  `window.confirm` → **0**; build Vite sukses. Verifikasi sumber **17/17 lolos**.
+  Regresi API: Tahap 2 **17/18** (S2 pre-existing), Admin **33/33**, Security **23/23**.
+- **File**: `web/src/components/Modal.jsx` (baru),
+  `web/src/components/ConfirmDialog.jsx` (baru),
+  `web/src/components/StatusBadge.jsx` (baru),
+  `web/src/pages/admin/Bookings.jsx`, `admin/Slots.jsx`, `admin/Customers.jsx`,
+  `admin/Pricelist.jsx`, `web/src/pages/Riwayat.jsx`,
+  `web/src/components/profil/AlamatPanel.jsx`, bundle `public/assets/*` +
+  `public/index.html`, `ENGINEER.md`.
+- **Catatan**: Batch 1 dari #8. Sisa: ganti 25 banner error/success yang masih
+  ditulis manual (Batch 2, PR terpisah).
+
 ### Refactor FE (Batch 3, terakhir): pecah Profil.jsx — issue #7
 
 - **Apa**: `pages/Profil.jsx` (**766 baris**) dipecah jadi halaman tipis + 5

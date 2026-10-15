@@ -5,6 +5,8 @@ import { useListQuery } from '../../lib/useListQuery.js'
 import { formatRupiah, formatDateShort, formatSlotTime, statusLabel } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
 import BookingRow from '../../components/admin/BookingRow.jsx'
+import Modal from '../../components/Modal.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 
 /**
  * Booking admin (PRD Bab 16.3): tabel + filter + search + pagination server-side.
@@ -313,13 +315,25 @@ export default function AdminBookings() {
         </div>
       </div>
 
-      {/* Dialog aksi */}
-      {dialog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold">
-              {dialog.action.label} — {dialog.booking.code}
-            </h3>
+      {/* Dialog aksi (berform: alasan wajib untuk tolak/batalkan) */}
+      <Modal
+        open={dialog !== null}
+        title={dialog ? `${dialog.action.label} — ${dialog.booking.code}` : ''}
+        onClose={() => setDialog(null)}
+        busy={busy}
+        footer={
+          <>
+            <button type="button" disabled={busy} onClick={jalankanAksi} className="btn btn-cta py-2">
+              {busy ? 'Menyimpan…' : dialog ? 'Ya, ' + dialog.action.label : 'Ya'}
+            </button>
+            <button type="button" onClick={() => setDialog(null)} className="btn btn-ghost py-2">
+              Batal
+            </button>
+          </>
+        }
+      >
+        {dialog ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">
               {dialog.booking.name} · {formatDateShort(dialog.booking.slot_date)} {formatSlotTime(dialog.booking.slot_time)}
             </p>
@@ -337,23 +351,27 @@ export default function AdminBookings() {
             ) : (
               <p className="mt-4 text-sm text-gray-600">Yakin ubah status booking ini?</p>
             )}
-            <div className="mt-4 flex gap-2">
-              <button type="button" disabled={busy} onClick={jalankanAksi} className="btn btn-cta">
-                {busy ? 'Menyimpan…' : 'Ya, ' + dialog.action.label}
-              </button>
-              <button type="button" onClick={() => setDialog(null)} className="btn btn-ghost">
-                Batal
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Modal>
 
-      {/* Dialog pindah jadwal (superadmin) */}
-      {move ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold">Pindah Jadwal — {move.booking.code}</h3>
+      {/* Dialog pindah jadwal (superadmin, berform) */}
+      <Modal
+        open={move !== null}
+        title={move ? `Pindah Jadwal — ${move.booking.code}` : ''}
+        onClose={() => { setMove(null); setMoveError('') }}
+        busy={busy}
+        footer={
+          <>
+            <button type="button" disabled={busy} onClick={simpanPindah} className="btn btn-cta py-2">
+              {busy ? 'Memindah…' : 'Pindahkan'}
+            </button>
+            <button type="button" onClick={() => { setMove(null); setMoveError('') }} className="btn btn-ghost py-2">Batal</button>
+          </>
+        }
+      >
+        {move ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">
               Sekarang: {formatDateShort(move.booking.slot_date)} {formatSlotTime(move.booking.slot_time)}
             </p>
@@ -387,36 +405,31 @@ export default function AdminBookings() {
             {moveError ? (
               <p role="alert" className="mt-3 rounded-xl border-2 border-black bg-red-100 px-3 py-2 text-sm font-bold">{moveError}</p>
             ) : null}
-            <div className="mt-4 flex gap-2">
-              <button type="button" disabled={busy} onClick={simpanPindah} className="btn btn-cta">
-                {busy ? 'Memindah…' : 'Pindahkan'}
-              </button>
-              <button type="button" onClick={() => { setMove(null); setMoveError('') }} className="btn btn-ghost">Batal</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Modal>
 
-      {/* Dialog hapus permanen (superadmin) */}
-      {hapus ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="card w-full max-w-md p-5">
-            <h3 className="text-lg font-extrabold text-red-700">Hapus {hapus.code}?</h3>
+      {/* Dialog hapus permanen (superadmin, konfirmasi) */}
+      <ConfirmDialog
+        open={hapus !== null}
+        title={hapus ? `Hapus ${hapus.code}?` : ''}
+        confirmLabel="Ya, Hapus Permanen"
+        variant="destructive"
+        busy={busy}
+        onConfirm={konfirmasiHapus}
+        onCancel={() => setHapus(null)}
+      >
+        {hapus ? (
+          <>
             <p className="mt-1 text-sm text-gray-600">
               {hapus.name} · {formatDateShort(hapus.slot_date)} {formatSlotTime(hapus.slot_time)} · {formatRupiah(hapus.total)}
             </p>
             <p className="mt-3 text-sm text-gray-600">
               Booking beserta isi barangnya dihapus <b>permanen</b>. Slotnya dibuka lagi. Riwayat audit tetap tersimpan. Tidak bisa dibatalkan.
             </p>
-            <div className="mt-4 flex gap-2">
-              <button type="button" disabled={busy} onClick={konfirmasiHapus} className="btn border-red-700 bg-red-600 text-white hover:bg-red-700">
-                {busy ? 'Menghapus…' : 'Ya, Hapus Permanen'}
-              </button>
-              <button type="button" onClick={() => setHapus(null)} className="btn btn-ghost">Batal</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </ConfirmDialog>
     </div>
   )
 }

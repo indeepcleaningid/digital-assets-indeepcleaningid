@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '../../lib/api.js'
 import { formatDateShort } from '../../lib/format.js'
 import { useAuth } from '../../lib/auth.jsx'
+import Modal from '../../components/Modal.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 
 /**
  * Daftar customer admin (PRD Bab 16.3): WA, total booking, alamat default, riwayat.
@@ -184,11 +186,21 @@ export default function AdminCustomers() {
         </div>
       </div>
 
-      {/* --- Dialog edit --- */}
-      {edit && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setEdit(null)}>
-          <div className="w-full max-w-md rounded-card border-2 border-ink bg-white p-5 shadow-brutal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-3 text-lg font-extrabold">Edit Customer #{edit.id}</h3>
+      {/* --- Dialog edit (berform) --- */}
+      <Modal
+        open={edit !== null}
+        title={edit ? `Edit Customer #${edit.id}` : ''}
+        onClose={() => setEdit(null)}
+        busy={busy}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost btn-press py-2" onClick={() => setEdit(null)}>Batal</button>
+            <button type="button" disabled={busy} className="btn btn-cta py-2" onClick={simpanEdit}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
+          </>
+        }
+      >
+        {edit ? (
+          <>
             <label className="mb-2 block text-sm font-bold">
               Nama
               <input className="input-brutal mt-1" value={edit.name} maxLength={100} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
@@ -209,32 +221,29 @@ export default function AdminCustomers() {
                 <option value="13.00">13.00</option>
               </select>
             </label>
-            <div className="flex gap-2">
-              <button type="button" className="btn btn-ghost btn-press flex-1 py-2" onClick={() => setEdit(null)}>Batal</button>
-              <button type="button" disabled={busy} className="btn btn-cta flex-1 py-2" onClick={simpanEdit}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : null}
+      </Modal>
 
-      {/* --- Dialog hapus --- */}
-      {hapus && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setHapus(null)}>
-          <div className="w-full max-w-md rounded-card border-2 border-ink bg-white p-5 shadow-brutal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-1 text-lg font-extrabold text-red-700">Hapus {hapus.name || hapus.email}?</h3>
+      {/* --- Dialog hapus (konfirmasi) --- */}
+      <ConfirmDialog
+        open={hapus !== null}
+        title={hapus ? `Hapus ${hapus.name || hapus.email}?` : ''}
+        confirmLabel="Ya, Hapus Permanen"
+        variant="destructive"
+        busy={busy}
+        onConfirm={konfirmasiHapus}
+        onCancel={() => setHapus(null)}
+      >
+        {hapus ? (
+          <>
             <p className="mb-1 text-sm text-gray-600">
               <b>{hapus.total_bookings}</b> booking dan semua alamat miliknya ikut <b>terhapus permanen</b>. Tidak bisa dibatalkan.
             </p>
             <p className="mb-4 text-sm text-gray-600">Yakin lanjut?</p>
-            <div className="flex gap-2">
-              <button type="button" className="btn btn-ghost btn-press flex-1 py-2" onClick={() => setHapus(null)}>Batal</button>
-              <button type="button" disabled={busy} className="btn flex-1 border-red-700 bg-red-600 py-2 text-white hover:bg-red-700" onClick={konfirmasiHapus}>
-                {busy ? 'Menghapus…' : 'Ya, Hapus Permanen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : null}
+      </ConfirmDialog>
     </div>
   )
 }
