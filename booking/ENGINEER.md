@@ -10,6 +10,35 @@
 
 ## 2026-10-15
 
+### Polish backend (Batch 2, penutup): N+1, index audit_logs, DRY read_json_body — issue #4
+
+- **Apa**:
+  - **N+1 di `admin/customers.php`** — 3 korelasi subquery per baris (COUNT
+    bookings, default address, MAX slot_date) diganti subquery beragregasi +
+    LEFT JOIN setelah halaman user di-LIMIT. Output tak berubah.
+  - **Index `audit_logs(action)`** — ditambah di `scripts/schema.sql` (DB baru) +
+    `scripts/migrate.php` (baru, **idempoten**, untuk DB yang sudah ada).
+  - **`app/lib/request.php`** (baru) — `read_json_body(bool $requireArray)` &
+    `request_date_ymd()`; dipakai di 8 endpoint yang sebelumnya menyalin pola
+    `file_get_contents('php://input')` + `json_decode` (login, admin-login,
+    otp-request/verify/email-confirm, quote, bookings-cancel, addresses).
+- **Kenapa**: Issue #4 — N+1 query, `audit_logs.action` tanpa index (padahal
+  difilter), boilerplate parsing body 16×.
+- **Bukti**: `customers.php` GET tetap balas `total_bookings`/`default_address`/
+  `last_booking`. Migrasi run 1 → `[ok] ditambahkan`, run 2 → `[skip]`. Suite:
+  OTP **21/21**, login-password **19/19**, Admin **33/33**, Security **23/23**,
+  Tahap 2 **18/19** (S2 pre-existing). `php -l` semua hijau.
+- **File**: `app/lib/request.php` (baru), `app/lib/bootstrap.php`,
+  `scripts/migrate.php` (baru), `scripts/schema.sql`, `public/api/admin/customers.php`,
+  `public/api/{login,admin-login,otp-request,otp-verify,otp-email-confirm,quote,bookings-cancel,addresses}.php`,
+  `ENGINEER.md`.
+- **Keputusan tertunda (dicatat, bukan dikerjakan)**: standardisasi **error code**
+  (`slot_penuh`/`slot_full`, `terlalu_sering`/`rate_limited`) & **envelope sukses**
+  **tidak** diubah di batch ini. Alasan: tidak ada bug & tidak ada konsumen FE
+  yang mengecek code itu (FE pakai `message`; hanya `double_submit` yang dicek
+  eksplisit), sementara mengubahnya menyentuh banyak suite uji (OTP/login) —
+  risiko > nilai. Kalau nanti perlu, kerjakan terpisah bersama update test.
+
 ### Polish backend (Batch 1): fix config() default, error_log, dead code, 405 guard — issue #4
 
 - **Apa**:

@@ -16,11 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $user = require_login();
 
-$raw  = file_get_contents('php://input');
-$body = json_decode($raw ?: '', true);
-if (!is_array($body)) {
-    json_error(400, 'bad_request', 'Data yang dikirim belum benar.');
-}
+$body = read_json_body();
 
 $oldEmail = (string) $user['email'];
 $newEmail = strtolower(trim((string) ($body['newEmail'] ?? '')));

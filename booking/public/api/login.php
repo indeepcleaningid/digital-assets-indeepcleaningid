@@ -23,11 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
 }
 
-$raw  = file_get_contents('php://input');
-$body = json_decode($raw ?: '', true);
-if (!is_array($body)) {
-    json_error(400, 'bad_request', 'Data yang dikirim belum benar.');
-}
+$body = read_json_body();
 
 $email    = strtolower(trim((string) ($body['email'] ?? '')));
 $password = (string) ($body['password'] ?? '');
