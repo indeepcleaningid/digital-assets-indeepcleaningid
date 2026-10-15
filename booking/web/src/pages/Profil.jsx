@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import PasswordInput from '../components/PasswordInput.jsx'
@@ -10,7 +11,7 @@ import PasswordInput from '../components/PasswordInput.jsx'
  * - Panel alamat, ganti password (OTP), ganti email (OTP) di file terpisah.
  */
 export default function Profil() {
-  const { user, refresh } = useAuth()
+  const { user, loading, refresh } = useAuth()
   const fileRef = useRef(null)
 
   const [name, setName] = useState('')
@@ -36,7 +37,12 @@ export default function Profil() {
     }
   }, [user])
 
-  if (!user) return null
+  // Sesi habis = arahkan ke login, jangan layar kosong (issue #6)
+  if (loading) {
+    return <main className="mx-auto max-w-3xl px-4 py-16 text-center font-bold">Memuat…</main>
+  }
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role !== 'customer') return <Navigate to="/admin" replace />
 
   async function onSimpan(event) {
     event.preventDefault()

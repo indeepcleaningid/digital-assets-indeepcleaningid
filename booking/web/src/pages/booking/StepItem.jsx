@@ -26,6 +26,8 @@ export default function StepItem({
   onToggleSurcharge,
   quote,
   quoteLoading,
+  quoteError,
+  onRetryQuote,
   onBack,
   onNext,
 }) {
@@ -177,12 +179,28 @@ export default function StepItem({
 
       {/* Ringkasan total */}
       <div className="sticky bottom-2 rounded-card border-2 border-ink bg-paper p-4 shadow-brutal" aria-live="polite">
-        <div className="flex items-center justify-between font-bold">
-          <span>Total estimasi</span>
-          <span className="text-xl font-extrabold">
-            {quoteLoading ? 'Menghitung…' : formatRupiah(total)}
-          </span>
-        </div>
+        {quoteError ? (
+          <div role="alert">
+            <p className="font-extrabold text-red-700">Gagal memuat harga.</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Jaringan atau server sedang gangguan — total di bawah belum bisa dihitung.
+            </p>
+            <button
+              type="button"
+              className="btn btn-press mt-2 py-2 text-sm"
+              onClick={onRetryQuote}
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between font-bold">
+            <span>Total estimasi</span>
+            <span className="text-xl font-extrabold">
+              {quoteLoading ? 'Menghitung…' : formatRupiah(total)}
+            </span>
+          </div>
+        )}
 
         {quote && (
           <>
@@ -206,16 +224,20 @@ export default function StepItem({
           type="button"
           className="btn btn-cta flex-1 py-3"
           onClick={onNext}
-          disabled={itemCount === 0 || below || quoteLoading}
+          disabled={itemCount === 0 || below || quoteLoading || quoteError || !quote}
         >
           Lanjut — Pilih Jadwal
         </button>
       </div>
-      {below && itemCount > 0 && (
+      {quoteError && itemCount > 0 ? (
+        <p className="mt-2 text-center text-sm font-bold text-red-700">
+          Tombol lanjut menyala lagi setelah harga berhasil dimuat.
+        </p>
+      ) : below && itemCount > 0 ? (
         <p className="mt-2 text-center text-sm font-bold text-red-700">
           Minimum order {formatRupiah(minOrder)}. Tambah item dulu biar tim jalan worth it.
         </p>
-      )}
+      ) : null}
     </section>
   )
 }

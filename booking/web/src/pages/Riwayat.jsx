@@ -82,7 +82,13 @@ export default function Riwayat() {
             Halaman riwayat ini khusus akun customer. Logout dulu dari akun tim, lalu login
             sebagai customer (akun Google atau email) untuk melihat riwayat booking kamu.
           </p>
-          <button type="button" className="btn btn-cta px-5 py-2" onClick={() => { logout().finally(() => window.location.assign('/login')) }}>
+          <button
+            type="button"
+            className="btn btn-cta px-5 py-2"
+            onClick={() => {
+              logout().finally(() => navigate('/login', { replace: true }))
+            }}
+          >
             Logout & Login Ulang
           </button>
         </div>

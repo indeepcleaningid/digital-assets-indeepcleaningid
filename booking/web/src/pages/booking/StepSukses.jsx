@@ -6,7 +6,7 @@ import HubungiAdmin from '../../components/HubungiAdmin.jsx'
  * Langkah 5 — Sukses (PRD Bab 9.2):
  * nomor booking, tanggal jam, total, tombol riwayat dan unduh struk.
  */
-export default function StepSukses({ booking }) {
+export default function StepSukses({ booking, onNew }) {
   return (
     <section className="rounded-card border-2 border-ink bg-white p-6 text-center shadow-brutal sm:p-8">
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-ink bg-success text-3xl">
@@ -41,11 +41,7 @@ export default function StepSukses({ booking }) {
 
       <p className="mt-6 text-sm text-gray-600">
         Mau pesan lagi?{' '}
-        <button
-          type="button"
-          className="font-bold underline"
-          onClick={() => window.location.assign('/booking')}
-        >
+        <button type="button" className="font-bold underline" onClick={onNew}>
           Mulai booking baru
         </button>
       </p>
