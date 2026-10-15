@@ -2,17 +2,36 @@
 /**
  * POST /api/login-dev.php — fallback login customer via email (PRD Bab 10.1).
  *
- * Login Google adalah pintu utama. Login dev ini:
- * - Hidup di localhost (dev lokal + suite uji tetap bisa jalan).
- * - OTOMATIS MATI di produksi (APP_URL domain publik) — aman tanpa ubah kode.
+ * Login Google adalah pintu utama. Login dev ini HANYA untuk dev lokal.
+ *
+ * Dua gate (issue #27):
+ * - Gate 1 (web server): .htaccess memblokir file ini di produksi — request
+ *   berhenti sebelum PHP sempat jalan.
+ * - Gate 2 (gate ini): wajib APP_URL localhost DAN server php -S (SAPI
+ *   'cli-server') yang cuma dipakai Docker lokal. Produksi jalan di
+ *   Apache/LiteSpeed, jadi walau APP_URL config salah/ketuker (mis. ke-copy
+ *   dari config.example), endpoint ini tetap mati — gak ada yang bisa
+ *   mengaktifkan lewat config.
+ * - Tiap pemanggilan dicatat audit_log biar ada jejak.
  */
 
 require __DIR__ . '/../../app/lib/bootstrap.php';
 require __DIR__ . '/../../app/lib/session.php';
+require __DIR__ . '/../../app/lib/audit.php';
 
-$appUrl = (string) config('APP_URL');
+$appUrl  = (string) config('APP_URL');
 $isLocal = str_contains($appUrl, 'localhost') || str_contains($appUrl, '127.0.0.1');
-if (!$isLocal) {
+// php -S (server dev lokal) punya SAPI 'cli-server'; Apache/LiteSpeed tidak.
+$isDevServer = PHP_SAPI === 'cli-server';
+
+if (!$isLocal || !$isDevServer) {
+    audit_log(
+        null,
+        'system',
+        'login_dev_blocked',
+        null, null, null,
+        'APP_URL=' . $appUrl . ' | SAPI=' . PHP_SAPI
+    );
     json_error(403, 'dev_disabled', 'Login dev hanya tersedia di lingkungan lokal.');
 }
 
@@ -61,5 +80,13 @@ if (!$user) {
 
 session_boot();
 login_user((int) $user['id'], (string) $user['role']);
+
+audit_log(
+    (int) $user['id'],
+    (string) $user['role'],
+    'login_dev',
+    null, null, null,
+    'Login dev lokal (email ' . $email . ')'
+);
 
 json_response(['data' => $user]);
