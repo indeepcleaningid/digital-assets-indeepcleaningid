@@ -14,6 +14,10 @@ require __DIR__ . '/../../../app/lib/omzet.php';
 
 require_role('admin', 'superadmin');
 
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    json_error(405, 'method_not_allowed', 'Metode ini tidak didukung.');
+}
+
 $pdo = db();
 $today = date('Y-m-d');
 

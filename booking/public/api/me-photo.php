@@ -23,7 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         db()->prepare('UPDATE users SET photo_path = NULL WHERE id = ?')
             ->execute([(int) $user['id']]);
     }
-    recompute_profile_complete((int) $user['id']);
+    // Foto bukan bagian dari kriteria profile_complete (nama + WA + alamat) —
+    // tak perlu recompute di sini (issue #4).
     json_response(['data' => ['ok' => true]]);
 }
 
@@ -87,6 +88,5 @@ if ($old !== '') {
 db()->prepare('UPDATE users SET photo_path = ? WHERE id = ?')
     ->execute([$newName, (int) $user['id']]);
 
-recompute_profile_complete((int) $user['id']);
-
+// Foto bukan kriteria profile_complete — tak perlu recompute (issue #4).
 json_response(['data' => ['ok' => true, 'photo_url' => uploads_url($newName)]]);
