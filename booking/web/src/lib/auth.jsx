@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { api, ApiError } from './api.js'
+import { api } from './api.js'
 
 /**
  * State auth global: siapa yang login, loading, refresh, logout.
@@ -17,13 +17,10 @@ export function AuthProvider({ children }) {
     try {
       const res = await api('/me.php')
       setUser(res.data)
-    } catch (err) {
-      // 401 = belum login (wajar). Error jaringan juga dianggap belum login.
-      if (err instanceof ApiError && err.status === 401) {
-        setUser(null)
-      } else {
-        setUser(null)
-      }
+    } catch {
+      // 401 = belum login (wajar). Error lain (jaringan/dsb) juga dianggap
+      // belum login — dua cabang dulu yang identik digabung (issue #3).
+      setUser(null)
     } finally {
       setLoading(false)
     }
